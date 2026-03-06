@@ -20,12 +20,12 @@ public static class RoadSegmentFactoryMC
         
 
         // Identification
-        segment.SegmentName = model.GetInputDataText(segment.ElementIndex, "inp_seg_name");
+        segment.SegmentCode = model.GetInputDataText(segment.ElementIndex, "inp_seg_code");
         segment.SectionID = model.GetInputDataNumber(segment.ElementIndex, "inp_section_id");
         segment.SectionName = model.GetInputDataText(segment.ElementIndex, "inp_section_name");
         segment.LocFrom = model.GetInputDataNumber(segment.ElementIndex, "inp_loc_from");
         segment.LocTo = model.GetInputDataNumber(segment.ElementIndex, "inp_loc_to");
-        segment.LaneCode = model.GetInputDataText(segment.ElementIndex, "inp_lane_name");
+        segment.LaneCode = model.GetInputDataText(segment.ElementIndex, "inp_lane");
 
         // Core measures
         segment.LengthInMetre = model.GetInputDataNumber(segment.ElementIndex, "inp_length");
@@ -38,7 +38,7 @@ public static class RoadSegmentFactoryMC
         
         
         // Traffic        
-        segment.AverageDailyTraffic = model.GetInputDataNumber(segment.ElementIndex, "inp_adt");
+        segment.AverageDailyTraffic = Math.Max(1, model.GetInputDataNumber(segment.ElementIndex, "inp_adt")); //Ensure ADT is at least 1
         segment.HeavyVehiclePercentage = model.GetInputDataNumber(segment.ElementIndex, "inp_heavy_perc");        
         segment.TrafficGrowthPercent = model.GetInputDataNumber(segment.ElementIndex, "inp_traff_growth_perc");
 
@@ -48,17 +48,16 @@ public static class RoadSegmentFactoryMC
         segment.SurfaceFunction = model.GetInputDataText(segment.ElementIndex, "inp_surf_function");        
         segment.SurfaceMaterial = model.GetInputDataText(segment.ElementIndex, "inp_surf_material");
         segment.SurfaceExpectedLife = model.GetInputDataNumber(segment.ElementIndex, "inp_surf_life_expected");
-        segment.SurfaceNumberOfLayers = model.GetInputDataNumber(segment.ElementIndex, "inp_surf_layer_no");
+        segment.SurfaceNumberOfLayers = model.GetInputDataNumber(segment.ElementIndex, "inp_surf_layers");
         segment.SurfaceThickness = model.GetInputDataNumber(segment.ElementIndex, "inp_surf_thick");
 
         // Pavement        
         segment.PavementDate = GetDateFromISO(model.GetInputDataText(segment.ElementIndex, "inp_pave_date"), "Pavement Date");
-        segment.PavementRemainingLife = model.GetInputDataNumber(segment.ElementIndex, "inp_pave_remlife");
-        
+                
         // Roughness and rutting
-        segment.HSDSurveyDate = GetDateFromISO(model.GetInputDataText(segment.ElementIndex, "inp_rough_survey_date"),"HSD Survey Date");
-        segment.IRIMean = model.GetInputDataNumber(segment.ElementIndex, "inp_iri_mean");
-        segment.RutMean = model.GetInputDataNumber(segment.ElementIndex, "inp_iri_mean");
+        segment.HSDSurveyDate = GetDateFromISO(model.GetInputDataText(segment.ElementIndex, "inp_hsd_survey_date"),"HSD Survey Date");
+        segment.RutMean = model.GetInputDataNumber(segment.ElementIndex, "inp_rut_mean");
+        segment.IRIMean = model.GetInputDataNumber(segment.ElementIndex, "inp_iri_mean");        
         segment.TextureMean = model.GetInputDataNumber(segment.ElementIndex, "inp_text_mean");
 
 
@@ -77,30 +76,13 @@ public static class RoadSegmentFactoryMC
     public static RoadSegmentMC GetFromModel(ModelBase frameworkModel, Dictionary<string, double> numInputValues, Dictionary<string, string> textInputValues, 
         Dictionary<string, double> numParamValues, Dictionary<string, string> textParamValues, int elementIndex, int iPeriod)
     {
-        RoadSegmentMC segment = new RoadSegmentMC();
 
-        //First set all properties that are still dependend on the raw input data and that do not change over
-        // the modelling periods
-
-        segment.ElementIndex = elementIndex; // Set the element index for this segment
-
-        // Identification
-        segment.SegmentName = textInputValues["inp_seg_name"];
-        segment.SectionID = Convert.ToInt32(numInputValues["inp_section_id"]);
-        segment.SectionName = textInputValues["inp_section_name"];
-        segment.LocFrom = Convert.ToInt32(numInputValues["inp_loc_from"]);
-        segment.LocTo = Convert.ToInt32(numInputValues["inp_loc_to"]);
-        segment.LaneCode = textInputValues["inp_lane_name"];
-
-        // Core measures
-        segment.LengthInMetre = numInputValues["inp_length"];
-        segment.AreaSquareMetre = numInputValues["inp_area_m2"];
-        segment.WidthInMetre = segment.AreaSquareMetre / segment.LengthInMetre;
-        
-        // Classification
-        segment.UrbanRural = textInputValues["inp_urban_rural"].ToLower();
-        segment.ONRC = textInputValues["inp_onrc"].ToLower();
-                       
+        // First set all properties that are still dependend on the raw input data and that do not change over
+        // the modelling periods. Some properties set on raw data such as rut and iri will no longer be relevant, but
+        // we will update those properties based on the model parameters later in this method, so we can still use the raw data
+        // as a starting point for those properties.
+        RoadSegmentMC segment = GetFromRawData(frameworkModel, elementIndex);
+                               
         // Now set the properties that depend on model parameters: Work in order of model parameter definition set
         // in the setup file so that we can more easily spot missing parameters.
 
@@ -128,13 +110,16 @@ public static class RoadSegmentFactoryMC
 
         
         //Rutting and IRI
-        segment.RutIncrement = numParamValues["par_rut_increm"];  // Updated rut
-        segment.RutMean = numParamValues["par_rut"];
+        segment.RutIncrement = numParamValues["par_rut_increm"];  // Updated Rut Increment for the episode
+        segment.RutMean = numParamValues["par_rut"];              // Updated Rut value
 
-        segment.IRIIncrement = numParamValues["par_iri_increm"];  // Updated IRI increment
+        segment.IRIIncrement = numParamValues["par_iri_increm"];  // Updated IRI increment for the episode
         segment.IRIMean = numParamValues["par_iri"];  // Updated IRI value
-        
-        // Ensure that the method to re-calculate index values are called on return
+
+        segment.TextureIncrement = numParamValues["par_text_increm"];  // Updated Texture increment for the episode
+        segment.TextureMean = numParamValues["par_text"];  // Updated Texture value
+
+        // Ensure that the method to re-calculate index values is called after return
 
         return segment;
     }

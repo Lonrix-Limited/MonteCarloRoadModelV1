@@ -28,13 +28,11 @@ public class Initialiser
         // Create a new RoadSegmentMC object based purely on the raw data provided in the string array.
         RoadSegmentMC segment = RoadSegmentFactoryMC.GetFromRawData(_frameworkModel, iElemIndex);
 
-        // Now do checks on the values and handle any anomalous data
-
-        segment.AverageDailyTraffic = Math.Max(1, segment.AverageDailyTraffic); // Ensure ADT is at least 1
+        // Now do checks on the values and handle any anomalous data        
         segment.PavementAge = GetPavementAge(segment); 
         segment.SurfaceAge = GetSurfacingAge(segment); 
         
-        //segment.RutParameterValue = GetInitialRuttingValue(segment);
+        segment.RutMean = GetInitialRuttingValue(segment);
         //segment.RutIncrement = GetRutIncrementEstimate(segment);
 
         //segment.Naasra85 = GetInitialNaasraValue(segment);

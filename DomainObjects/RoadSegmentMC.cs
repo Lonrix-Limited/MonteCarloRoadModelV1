@@ -29,14 +29,14 @@ public class RoadSegmentMC
     {
         get
         {
-            return $"elem_index: {this.ElementIndex:D4} - {this.SegmentName}";
+            return $"elem_index: {this.ElementIndex:D4} - {this.SegmentCode}";
         }
     }
 
     /// <summary>
     /// Segment identifier. Maps to input column "file_seg_name".
     /// </summary>
-    public string SegmentName { get; set; }
+    public string SegmentCode { get; set; }
 
     /// <summary>
     /// Section ID. Maps to "file_section_id".

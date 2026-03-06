@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using JCass_Data.Objects;
 using JCass_Data.Utils;
+using JCass_Functions.Engineering;
 using JCass_ModelCore.DomainModels;
 using JCass_ModelCore.MonteCarlo;
 using JCass_ModelCore.Treatments;
@@ -13,10 +14,42 @@ public class MonteCarloRoadModelV1 : DomainModelBase
 {
     public Constants Constants { get; set; }
 
+
+    private Initialiser _initialiser;
+
+    /// <summary>
+    /// Simulator for Rut Depth Increment. 
+    /// </summary>
     public DistributionSimulator RutIncrementSimulator { get; set; }
+
+    /// <summary>
+    /// Simulator for IRI Increment.
+    /// </summary>
     public DistributionSimulator IRIIncrementSimulator { get; set; }
 
+    /// <summary>
+    /// Simulator for Texture Increment.
+    /// </summary>
     public DistributionSimulator TextureIncrementSimulator { get; set; }
+
+
+    /// <summary>
+    /// Piecewise Linear function to calculate the Standard Deviation of the Rut Increment residual as a function of the current rut depth.
+    /// Function generally gives higher SD values for higher rut depths, to reflect the higher variability in rut increment as rut depth increases. 
+    /// </summary>
+    public PieceWiseLinearModelGeneric RutInrementResidualSDFunction { get; set; }
+
+
+    /// <summary>
+    /// Piecewise Linear function to calculate the Standard Deviation of the IRI Increment residual as a function of the current IRI value.
+    /// </summary>
+    public PieceWiseLinearModelGeneric IRIInrementResidualSDFunction { get; set; }
+
+    
+    /// <summary>
+    /// Piecewise Linear function to calculate the Standard Deviation of the Texture Increment residual as a function of the current texture value.
+    /// </summary>
+    public PieceWiseLinearModelGeneric TextureInrementResidualSDFunction { get; set; }
 
     public MonteCarloRoadModelV1()
     {
@@ -32,24 +65,22 @@ public class MonteCarloRoadModelV1 : DomainModelBase
     {
         try
         {
-            //_initialiser = new Initialiser(this.model, this);
+            _initialiser = new Initialiser(this.model, this);
             //_resetter = new Resetter(this.model, this);
             //_incrementer = new Incrementer(this.model, this);
-            //this.Constants = new Constants(this.model.Lookups);
+            this.Constants = new Constants(this.model.Lookups);
             //this.SetupDistressModels();
 
             string workFolder = model.Configuration.WorkFolder;
-            string distributionSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/cohort_rule_plm_setup_for_cassandra.csv");
-            if (!System.IO.File.Exists(distributionSetupFile))
-            {
-                throw new Exception($"Distribution setup file not found at: {distributionSetupFile}");
-            }
 
-            jcDataSet allSetupData = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
+            // Set up the distribution simulators for the increments for Rut, IRI and Texture
+            SetupUtilities.SetupDistributionSimulators(this, workFolder);
 
-            RutIncrementSimulator = SetupUtilities.GetDistributionSimulator("rut_inc", allSetupData);
-            IRIIncrementSimulator = SetupUtilities.GetDistributionSimulator("iri_inc", allSetupData);
-            TextureIncrementSimulator = SetupUtilities.GetDistributionSimulator("text_not_ac_inc", allSetupData);
+            // Set up the Piecewise Linear Models to calculate the Standard Deviation of the residuals for the increments
+            // for Rut, IRI and Texture
+            SetupUtilities.SetupIncrementResidualModels(this, workFolder);
+
+
 
         }
         catch (Exception ex)
@@ -80,8 +111,8 @@ public class MonteCarloRoadModelV1 : DomainModelBase
                 int kk = 9;
             }
 
-            //Dictionary<string, object> infoFromModel = model.GetSpecialPlaceholderValues(iElemIndex, 0);
-            //RoadSegmentMCMC segment = _initialiser.InitialiseSegment(iElemIndex);
+            Dictionary<string, object> infoFromModel = model.GetSpecialPlaceholderValues(iElemIndex, 0);
+            RoadSegmentMC segment = _initialiser.InitialiseSegment(iElemIndex);
 
             //// Update the formula values such as PDI, SDI, Objective Value Parameters, Maintenance Cost and CSA Status/Outcome
             //// before getting the parameter values

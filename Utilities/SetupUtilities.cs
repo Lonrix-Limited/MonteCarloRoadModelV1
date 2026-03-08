@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DocumentFormat.OpenXml.Packaging;
+using JCass_Core.Statistics;
 using JCass_Data.Objects;
 using JCass_Data.Utils;
 using JCass_Functions.Engineering;
@@ -76,6 +77,22 @@ public static class SetupUtilities
         return simulator;
     }
 
+
+    public static void SetupProbabilityModels(DomainObjects.MonteCarloRoadModelV1 domainModel, string workFolder)
+    {
+        string coefsFile = Path.Combine(workFolder, @"domain_model/logistic_potfill_ac_ogpa.csv");
+        if (!File.Exists(coefsFile)) throw new Exception($"Coefficient file for Logistic model not found at: {Path.GetFileName(coefsFile)}");        
+        jcDataSet d1 = CSVHelper.ReadDataFromCsvFile(coefsFile);
+        Dictionary<string, double> coefs1 = GetLogisticModelCoefficients(d1);
+        domainModel.PotfillProbabilityModelAC = new LogisticModel(coefs1);
+
+        coefsFile = Path.Combine(workFolder, @"domain_model/logistic_potfill_cs_slurry.csv");
+        if (!File.Exists(coefsFile)) throw new Exception($"Coefficient file for Logistic model not found at: {Path.GetFileName(coefsFile)}");
+        jcDataSet d2 = CSVHelper.ReadDataFromCsvFile(coefsFile);
+        Dictionary<string, double> coefs2 = GetLogisticModelCoefficients(d2);
+        domainModel.PotfillProbabilityModelCS = new LogisticModel(coefs2);
+    }
+
     private static jcDataSet GetFilteredDataSet(string parameterName, jcDataSet allSetups)
     {
         jcDataSet setupData = new jcDataSet();
@@ -92,5 +109,16 @@ public static class SetupUtilities
         return setupData;
     }
 
-
+    private static Dictionary<string, double> GetLogisticModelCoefficients(jcDataSet coefsData)
+    {        
+        Dictionary<string, double> coefs = new Dictionary<string, double>();
+        for (int i = 0; i < coefsData.Count; i++)
+        {
+            Dictionary<string, object> row = coefsData.Row(i);
+            string variableName = row["term"].ToString();
+            double coefValue = Convert.ToDouble(row["estimate"]);
+            coefs[variableName] = coefValue;
+        }
+        return coefs;
+    }
 }

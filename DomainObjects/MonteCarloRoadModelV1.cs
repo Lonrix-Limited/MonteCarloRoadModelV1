@@ -12,6 +12,9 @@ namespace MonteCarloRoadModelV1.DomainObjects;
 
 public class MonteCarloRoadModelV1 : DomainModelBase
 {
+
+    #region Variables and Submodels
+
     public Constants Constants { get; set; }
 
 
@@ -51,6 +54,23 @@ public class MonteCarloRoadModelV1 : DomainModelBase
     /// </summary>
     public PieceWiseLinearModelGeneric TextureInrementResidualSDFunction { get; set; }
 
+    /// <summary>
+    /// Model to predict the probability of pothole filling occurring in the next period for AC surfacings. Coefficients are 
+    /// read at startup from CSV file exported with R script. This CSV should have columns 'term' and 'estimate' where 
+    /// 'term' is the name of the coefficient (e.g. '(Intercept)', 'IRI', 'Rut', etc) and 'estimate' is the value of the coefficient. 
+    /// </summary>
+    public JCass_Core.Statistics.LogisticModel PotfillProbabilityModelAC { get; set; }
+
+
+    /// <summary>
+    /// Model to predict the probability of pothole filling occurring in the next period for CS surfacings. Coefficients are 
+    /// read at startup from CSV file exported with R script. This CSV should have columns 'term' and 'estimate' where 
+    /// 'term' is the name of the coefficient (e.g. '(Intercept)', 'IRI', 'Rut', etc) and 'estimate' is the value of the coefficient. 
+    /// </summary>
+    public JCass_Core.Statistics.LogisticModel PotfillProbabilityModelCS { get; set; }
+
+    #endregion
+
     public MonteCarloRoadModelV1()
     {
         //Nothing to do here. Note that property 'model' mapping to the ModelBase class (i.e. the Framework Model)
@@ -80,7 +100,8 @@ public class MonteCarloRoadModelV1 : DomainModelBase
             // for Rut, IRI and Texture
             SetupUtilities.SetupIncrementResidualModels(this, workFolder);
 
-
+            // Set up the probability models for pothole filling
+            SetupUtilities.SetupProbabilityModels(this, workFolder);
 
         }
         catch (Exception ex)

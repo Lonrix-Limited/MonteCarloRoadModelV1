@@ -1,4 +1,5 @@
 ﻿
+using JCass_Core.Utils;
 using JCass_ModelCore.Models;
 
 namespace MonteCarloRoadModelV1.DomainObjects;
@@ -126,20 +127,22 @@ public static class RoadSegmentFactoryMC
 
 
     /// <summary>
-    /// Parses an ISO date from input file in format 'yyyyMMdd' and returns a DateTime object. If the input is not a valid date, returns null.
+    /// Parses an ISO date from input file in format 'yyyyMMdd' and returns a DateTime object.
     /// </summary>
-    /// <param name="isodate"></param>
+    /// <param name="isoDate">ISO date string in format 'yyyyMMdd'</param>
+    /// <param name="errorLabel">Label for the field being parsed, used in error messages</param>
+    /// <returns>Parsed DateTime object</returns>
+    /// <exception cref="FormatException">Thrown when date format is invalid</exception>
     private static DateTime GetDateFromISO(string isoDate, string errorLabel)
-    {        
-        if (DateTime.TryParseExact(isoDate, "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out DateTime parsedDate))
+    {
+        try
         {
-            return parsedDate;
+            return HelperMethods.ParseISODateNoTime(isoDate);
         }
-        else
+        catch (Exception ex)
         {
-            throw new Exception($"Date for '{errorLabel}' is not in right format. Expecting 'yyyyMMdd'");
+            throw new FormatException($"Date for '{errorLabel}' is not in right format. Expecting 'yyyyMMdd'. Details: {ex.Message}", ex);
         }
-
     }
 
 }

@@ -33,12 +33,15 @@ public class Initialiser
         segment.SurfaceAge = GetSurfacingAge(segment); 
         
         segment.RutMean = GetInitialRuttingValue(segment);
-        //segment.RutIncrement = GetRutIncrementEstimate(segment);
+        segment.RutIncrement = GetRutIncrementEstimate(segment);
 
-        //segment.Naasra85 = GetInitialNaasraValue(segment);
-        //segment.NaasraIncrement = GetNaasraIncrementEstimate(segment);
-               
-        
+        segment.IRIMean = GetInitialIRIValue(segment);
+        segment.IRIIncrement = GetIRIIncrementEstimate(segment);
+
+        segment.TextureMean = GetInitialTextureValue(segment);
+        segment.TextureIncrement = GetTextureIncrementEstimate(segment);
+
+
         return segment;
     }
         
@@ -93,18 +96,18 @@ public class Initialiser
         }
         return age;
     }
-        
+
+    #region Rut Initial Value and Increment Estimation
+
     /// <summary>
     /// Get the initial rutting value, taking into account the HSD survey age and the Surfacing and Pavement ages. There are
     /// three possibilities:
     /// <para>1. The HSD survey is older than the Pavement Age: In this case we presume the segment has been rehabilitated
-    /// after the survey and return the value in lookup set 'rehab_resets_rut'</para>
+    /// after the survey and return the reset value using the appropriate Reset Simulator for rehabilitation
     /// <para>2. The HSD survey is not older than the Pavement Age but older than Surface Age: In this case we presume the 
-    /// segment has been resurfaced after the survey and calculate the resetted value based on how much the raw rutting value 
-    /// (calculated as the maximum of the LWP and RWP 85th percentile rut values) exceeds the reset exceedance threshold, and 
-    /// return the resetted value using a formula</para>
+    /// segment has been resurfaced after the survey and simulate the resetted value using the appropriate Reset Simulator for resurfacing
     ///</para>
-    /// <para>3. The HSD survey is not older than the Pavement Age or the Surface age - return the maximum of the LWP and RWP 85th percentile ruts    
+    /// <para>3. The HSD survey is not older than the Pavement Age or the Surface age - return the Rut Value from the input file    
     ///</para>
     /// </summary>
     /// <param name="segment"></param>
@@ -116,7 +119,7 @@ public class Initialiser
         // If segment has been rehabilitated, return the lookup value for the rutting reset
         bool hasBeenRehabilitated = segment.PavementAge < surveyAge;
         if (hasBeenRehabilitated) {
-            return _domainModel.GetLookupValueNumber("rehab_resets_rut", "all_cats");
+            return Resetter.GetRutResetValue(segment, _domainModel.SubModels, "rehab", _frameworkModel.Random);
         }
 
         double ruttingRaw = segment.RutMean;
@@ -125,55 +128,192 @@ public class Initialiser
         bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
         if (hasBeenResurfaced)
         {
-            double resetExceedenceThreshold = _domainModel.GetLookupValueNumber("reset_exceed_thresh_rut", "preserve");
-            double resetImprovementFactor = _domainModel.GetLookupValueNumber("reset_perc_improv_facts_rut", "preserve");
-
-            //double resetValue = CalculationUtilities.GetResetBasedOnExceedanceConcept(ruttingRaw, resetExceedenceThreshold, resetImprovementFactor);
-            //return resetValue;
-            return -1; // Placeholder until rut increment estimation logic is finalised
+            return Resetter.GetRutResetValue(segment, _domainModel.SubModels, "resurf", _frameworkModel.Random);
         }
 
         // If segment has not been rehabilitated or resurfaced, use the raw rutting value
         return ruttingRaw;
-
     }
 
 
     /// <summary>
-    /// Get an estimate of the initial rut rate, in mm per year, based on the current rut value and the surface age. Here,
-    /// we take into consideration that there is always some initial settlement. The effective rut rate is 
-    /// based on the current rut minus the setting-in value (from lookup table) divided by the surface age. 
-    /// A check is done to ensure the returned value is within a reasonable range (0.05 minimum to 1.5 maximum).
+    /// Get an estimate of the initial rut rate, in mm per year. If the segment has been treated (resurfaced or rehabilitated) since 
+    /// the HSD survey, then generate a new increment for the episode using the appropriate Increment Simulator. If the segment has 
+    /// not been treated since the HSD survey, then use the estimated rut increment from the Input File.
     /// </summary>    
     /// <returns>The estimated current rut rate, in mm/year</returns>
     private double GetRutIncrementEstimate(RoadSegmentMC segment)
     {
 
-        // If a treatment has been applied, use the post-treatment rut increment
-        // and not the estimate based on surface age
-        //double surveyAge = GetRutSurveyAge(segment);
-        //bool hasBeenTreated = segment.SurfaceAge < surveyAge;
-        //if (hasBeenTreated)
-        //{
-        //    return segment.GetRutIncrementAfterTreatment();
-        //}
+        double surveyAge = GetHSDSurveyAge(segment);
 
-        //// Get the estimated "settling-in" rut depth from the lookup table
-        //double settingInRutDepth = _domainModel.GetLookupValueNumber("settling_in_values", "rut");
+        // If segment has been rehabilitated, return the lookup value for the rutting reset
+        bool hasBeenRehabilitated = segment.PavementAge < surveyAge;
+        if (hasBeenRehabilitated)
+        {
+            return Incrementer.GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+        }
 
-        //// Get the rut increase after settlement. Ensure the value is not negative
-        //double rutAfterSettlement = Math.Max(0, segment.RutParameterValue - settingInRutDepth);
+        double ruttingRaw = segment.RutMean;
 
-        //double surfAgeSafe = segment.SurfaceAge + 0.1; // Ensure surface age is not zero to avoid division by zero errors
-        //double rutIncrementEstimate = rutAfterSettlement/ surfAgeSafe;
-
-        //TODO: Make the min and max values configurable in lookups
-        //return Math.Clamp(rutIncrementEstimate, 0.05, 1.5);
-        return -1; // Placeholder until rut increment estimation logic is finalised
+        // If segment has been resurfaced, determine the rutting exceedance and the reset
+        bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
+        if (hasBeenResurfaced)
+        {
+            return Incrementer.GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+        }
+        
+        return segment.RutIncrement; // Return the rut increment from the input file if the segment has not been treated since the HSD survey
 
     }
-   
+
+    #endregion
 
 
+    #region IRI Initial Value and Increment Estimation
+
+    /// <summary>
+    /// Get the initial IRI value, taking into account the HSD survey age and the Surfacing and Pavement ages. There are
+    /// three possibilities:
+    /// <para>1. The HSD survey is older than the Pavement Age: In this case we presume the segment has been rehabilitated
+    /// after the survey and return the reset value using the appropriate Reset Simulator for rehabilitation
+    /// <para>2. The HSD survey is not older than the Pavement Age but older than Surface Age: In this case we presume the 
+    /// segment has been resurfaced after the survey and simulate the resetted value using the appropriate Reset Simulator for resurfacing
+    ///</para>
+    /// <para>3. The HSD survey is not older than the Pavement Age or the Surface age - return the IRI Value from the input file    
+    ///</para>
+    /// </summary>
+    /// <param name="segment"></param>
+    /// <returns></returns>
+    private double GetInitialIRIValue(RoadSegmentMC segment)
+    {
+        double surveyAge = GetHSDSurveyAge(segment);
+
+        // If segment has been rehabilitated, return the lookup value for the IRI reset
+        bool hasBeenRehabilitated = segment.PavementAge < surveyAge;
+        if (hasBeenRehabilitated)
+        {
+            return Resetter.GetIRIResetValue(segment, _domainModel.SubModels, "rehab", _frameworkModel.Random);
+        }
+
+        double iriRaw = segment.IRIMean;
+
+        // If segment has been resurfaced, determine the IRI exceedance and the reset
+        bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
+        if (hasBeenResurfaced)
+        {
+            return Resetter.GetIRIResetValue(segment, _domainModel.SubModels, "resurf", _frameworkModel.Random);
+        }
+
+        // If segment has not been rehabilitated or resurfaced, use the raw IRI value
+        return iriRaw;
+    }
+
+
+    /// <summary>
+    /// Get an estimate of the initial IRI rate, in mm per year. If the segment has been treated (resurfaced or rehabilitated) since 
+    /// the HSD survey, then generate a new increment for the episode using the appropriate Increment Simulator. If the segment has 
+    /// not been treated since the HSD survey, then use the estimated IRI increment from the Input File.
+    /// </summary>    
+    /// <returns>The estimated current IRI rate, in mm/m/year</returns>
+    private double GetIRIIncrementEstimate(RoadSegmentMC segment)
+    {
+
+        double surveyAge = GetHSDSurveyAge(segment);
+
+        // If segment has been rehabilitated, return the lookup value for the IRI reset
+        bool hasBeenRehabilitated = segment.PavementAge < surveyAge;
+        if (hasBeenRehabilitated)
+        {
+            return Incrementer.GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+        }
+
+        double iriRaw = segment.IRIMean;
+
+        // If segment has been resurfaced, determine the IRI exceedance and the reset
+        bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
+        if (hasBeenResurfaced)
+        {
+            return Incrementer.GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+        }
+
+        return segment.IRIIncrement; // Return the IRI increment from the input file if the segment has not been treated since the HSD survey
+
+    }
+
+    #endregion
+
+
+    #region Texture Depth Initial Value and Increment Estimation
+
+    /// <summary>
+    /// Get the initial Texture value, taking into account the HSD survey age and the Surfacing and Pavement ages. There are
+    /// three possibilities:
+    /// <para>1. The HSD survey is older than the Pavement Age: In this case we presume the segment has been rehabilitated
+    /// after the survey and return the reset value using the appropriate Reset Simulator for rehabilitation
+    /// <para>2. The HSD survey is not older than the Pavement Age but older than Surface Age: In this case we presume the 
+    /// segment has been resurfaced after the survey and simulate the resetted value using the appropriate Reset Simulator for resurfacing
+    ///</para>
+    /// <para>3. The HSD survey is not older than the Pavement Age or the Surface age - return the Texture Value from the input file    
+    ///</para>
+    /// </summary>
+    /// <param name="segment"></param>
+    /// <returns></returns>
+    private double GetInitialTextureValue(RoadSegmentMC segment)
+    {
+        double surveyAge = GetHSDSurveyAge(segment);
+
+        // If segment has been rehabilitated, return the lookup value for the Texture reset
+        bool hasBeenRehabilitated = segment.PavementAge < surveyAge;
+        if (hasBeenRehabilitated)
+        {
+            return Resetter.GetTextureDepthResetValue(segment, _domainModel.SubModels, "rehab", _frameworkModel.Random);
+        }
+
+        double textureRaw = segment.TextureMean;
+
+        // If segment has been resurfaced, determine the Texture exceedance and the reset
+        bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
+        if (hasBeenResurfaced)
+        {
+            return Resetter.GetTextureDepthResetValue(segment, _domainModel.SubModels, "resurf", _frameworkModel.Random);
+        }
+
+        // If segment has not been rehabilitated or resurfaced, use the raw Texture value
+        return textureRaw;
+    }
+
+
+    /// <summary>
+    /// Get an estimate of the initial Texture rate, in mm per year. If the segment has been treated (resurfaced or rehabilitated) since 
+    /// the HSD survey, then generate a new increment for the episode using the appropriate Increment Simulator. If the segment has 
+    /// not been treated since the HSD survey, then use the estimated Texture increment from the Input File.
+    /// </summary>    
+    /// <returns>The estimated current Texture rate, in mm/m/year</returns>
+    private double GetTextureIncrementEstimate(RoadSegmentMC segment)
+    {
+
+        double surveyAge = GetHSDSurveyAge(segment);
+
+        // If segment has been rehabilitated, return the lookup value for the Texture reset
+        bool hasBeenRehabilitated = segment.PavementAge < surveyAge;
+        if (hasBeenRehabilitated)
+        {
+            return Incrementer.GetTextureIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+        }
+
+        double textureRaw = segment.TextureMean;
+        // If segment has been resurfaced, determine the Texture exceedance and the reset
+        bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
+        if (hasBeenResurfaced)
+        {
+            return Incrementer.GetTextureIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+        }
+
+        return segment.TextureIncrement; // Return the Texture increment from the input file if the segment has not been treated since the HSD survey
+
+    }
+
+    #endregion
 
 }

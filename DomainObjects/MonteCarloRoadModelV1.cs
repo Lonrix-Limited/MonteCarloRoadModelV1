@@ -1,5 +1,6 @@
 ﻿
 using System.Runtime.CompilerServices;
+using JCass_Core.Statistics;
 using JCass_Data.Objects;
 using JCass_Data.Utils;
 using JCass_Functions.Engineering;
@@ -20,54 +21,10 @@ public class MonteCarloRoadModelV1 : DomainModelBase
 
     private Initialiser _initialiser;
 
-    /// <summary>
-    /// Simulator for Rut Depth Increment. 
-    /// </summary>
-    public DistributionSimulator RutIncrementSimulator { get; set; }
+    private Incrementer _incrementer;
 
-    /// <summary>
-    /// Simulator for IRI Increment.
-    /// </summary>
-    public DistributionSimulator IRIIncrementSimulator { get; set; }
+    public SubModelDefinitions SubModels { get; set; }
 
-    /// <summary>
-    /// Simulator for Texture Increment.
-    /// </summary>
-    public DistributionSimulator TextureIncrementSimulator { get; set; }
-
-
-    /// <summary>
-    /// Piecewise Linear function to calculate the Standard Deviation of the Rut Increment residual as a function of the current rut depth.
-    /// Function generally gives higher SD values for higher rut depths, to reflect the higher variability in rut increment as rut depth increases. 
-    /// </summary>
-    public PieceWiseLinearModelGeneric RutInrementResidualSDFunction { get; set; }
-
-
-    /// <summary>
-    /// Piecewise Linear function to calculate the Standard Deviation of the IRI Increment residual as a function of the current IRI value.
-    /// </summary>
-    public PieceWiseLinearModelGeneric IRIInrementResidualSDFunction { get; set; }
-
-    
-    /// <summary>
-    /// Piecewise Linear function to calculate the Standard Deviation of the Texture Increment residual as a function of the current texture value.
-    /// </summary>
-    public PieceWiseLinearModelGeneric TextureInrementResidualSDFunction { get; set; }
-
-    /// <summary>
-    /// Model to predict the probability of pothole filling occurring in the next period for AC surfacings. Coefficients are 
-    /// read at startup from CSV file exported with R script. This CSV should have columns 'term' and 'estimate' where 
-    /// 'term' is the name of the coefficient (e.g. '(Intercept)', 'IRI', 'Rut', etc) and 'estimate' is the value of the coefficient. 
-    /// </summary>
-    public JCass_Core.Statistics.LogisticModel PotfillProbabilityModelAC { get; set; }
-
-
-    /// <summary>
-    /// Model to predict the probability of pothole filling occurring in the next period for CS surfacings. Coefficients are 
-    /// read at startup from CSV file exported with R script. This CSV should have columns 'term' and 'estimate' where 
-    /// 'term' is the name of the coefficient (e.g. '(Intercept)', 'IRI', 'Rut', etc) and 'estimate' is the value of the coefficient. 
-    /// </summary>
-    public JCass_Core.Statistics.LogisticModel PotfillProbabilityModelCS { get; set; }
 
     #endregion
 
@@ -87,7 +44,9 @@ public class MonteCarloRoadModelV1 : DomainModelBase
         {
             _initialiser = new Initialiser(this.model, this);
             //_resetter = new Resetter(this.model, this);
-            //_incrementer = new Incrementer(this.model, this);
+            _incrementer = new Incrementer(this.model, this);
+            this.SubModels = new SubModelDefinitions(model.RandomSeed);
+
             this.Constants = new Constants(this.model.Lookups);
             //this.SetupDistressModels();
 
@@ -102,6 +61,9 @@ public class MonteCarloRoadModelV1 : DomainModelBase
 
             // Set up the probability models for pothole filling
             SetupUtilities.SetupProbabilityModels(this, workFolder);
+
+            // Set up the models for the reset values after treatments
+            SetupUtilities.SetupResetModels(this, workFolder);
 
         }
         catch (Exception ex)
@@ -140,7 +102,7 @@ public class MonteCarloRoadModelV1 : DomainModelBase
             //segment.UpdateFormulaValues(this.model, this, 0,infoFromModel);
 
             //// By updating the sinks, the model will automatically update the values in the Framework Model matrices
-            //segment.SetParameterValues(numModParamValues, textModParamValues);
+            segment.SetParameterValues(numModParamValues, textModParamValues);
                         
         }
         catch (Exception ex)
@@ -224,10 +186,10 @@ public class MonteCarloRoadModelV1 : DomainModelBase
             RoadSegmentMC segment = RoadSegmentFactoryMC.GetFromModel(this.model, numInputs, textInputs, currentNumModParamValues, currentTextModParamValues, iElemIndex, iPeriod);
             
             // Apply increments here
-            //RoadSegmentMC incrementedSegment = _incrementer.Increment(segment, iPeriod);
+            RoadSegmentMC incrementedSegment = _incrementer.Increment(segment, iPeriod);
             //incrementedSegment.UpdateFormulaValues(this.model, this, iPeriod, infoFromModel);
 
-            //incrementedSegment.SetParameterValues(numModParamValues, textModParamValues);
+            incrementedSegment.SetParameterValues(numModParamValues, textModParamValues);
             
         }
         catch (Exception ex)

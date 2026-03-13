@@ -1,4 +1,5 @@
 ﻿
+using DocumentFormat.OpenXml.EMMA;
 using JCass_Core.Utils;
 using JCass_ModelCore.Models;
 
@@ -33,9 +34,10 @@ public static class RoadSegmentFactoryMC
         segment.AreaSquareMetre = model.GetInputDataNumber(segment.ElementIndex, "inp_area_m2");
         segment.WidthInMetre = segment.AreaSquareMetre / segment.LengthInMetre;
 
-        // Classification
+        // Classification/Carriageway/Rainfall
         segment.UrbanRural = model.GetInputDataText(segment.ElementIndex, "inp_urban_rural").ToLower();
         segment.ONRC = model.GetInputDataText(segment.ElementIndex, "inp_onrc").ToLower();
+        segment.RainfallMM = model.GetInputDataNumber(segment.ElementIndex, "inp_rainfall");
         
         
         // Traffic        
@@ -48,18 +50,27 @@ public static class RoadSegmentFactoryMC
         segment.SurfacingDate = GetDateFromISO(model.GetInputDataText(segment.ElementIndex, "inp_surf_date"), "Surfacing Date");
         segment.SurfaceFunction = model.GetInputDataText(segment.ElementIndex, "inp_surf_function");        
         segment.SurfaceMaterial = model.GetInputDataText(segment.ElementIndex, "inp_surf_material");
-        segment.SurfaceExpectedLife = model.GetInputDataNumber(segment.ElementIndex, "inp_surf_life_expected");
+        segment.SurfaceExpectedLife = GetExpectedSurfaceLifeSafe(model, segment);
         segment.SurfaceNumberOfLayers = model.GetInputDataNumber(segment.ElementIndex, "inp_surf_layers");
         segment.SurfaceThickness = model.GetInputDataNumber(segment.ElementIndex, "inp_surf_thick");
 
         // Pavement        
-        segment.PavementDate = GetDateFromISO(model.GetInputDataText(segment.ElementIndex, "inp_pave_date"), "Pavement Date");
-                
-        // Roughness and rutting
+        segment.PavementDate = GetDateFromISO(model.GetInputDataText(segment.ElementIndex, "inp_pave_date"), "Pavement Date");       
+
+        // High Speed Data - Rutting, Roughness (IRI) and Texture Depth
         segment.HSDSurveyDate = GetDateFromISO(model.GetInputDataText(segment.ElementIndex, "inp_hsd_survey_date"),"HSD Survey Date");
         segment.RutMean = model.GetInputDataNumber(segment.ElementIndex, "inp_rut_mean");
+        segment.RutIncrement = Math.Max(0.01,model.GetInputDataNumber(segment.ElementIndex, "inp_rut_rate"));
+
         segment.IRIMean = model.GetInputDataNumber(segment.ElementIndex, "inp_iri_mean");        
+        segment.IRIIncrement = Math.Max(0.001, model.GetInputDataNumber(segment.ElementIndex, "inp_iri_rate"));
+
         segment.TextureMean = model.GetInputDataNumber(segment.ElementIndex, "inp_text_mean");
+        segment.TextureIncrement = Math.Min(-0.01, model.GetInputDataNumber(segment.ElementIndex, "inp_text_rate"));
+
+        // Routine Maintenance 
+        segment.MaintenancePavement = model.GetInputDataNumber(segment.ElementIndex, "inp_maint_pa_ext");
+        segment.MaintenancePotfill = model.GetInputDataNumber(segment.ElementIndex, "inp_maint_poth_ext");
 
 
         return segment;
@@ -120,6 +131,10 @@ public static class RoadSegmentFactoryMC
         segment.TextureIncrement = numParamValues["par_text_increm"];  // Updated Texture increment for the episode
         segment.TextureMean = numParamValues["par_text"];  // Updated Texture value
 
+        // Routine Maintenance
+        segment.MaintenancePavement = numParamValues["par_maint_pa"]; // Updated maintenance extent for pavement
+        segment.MaintenancePotfill = numParamValues["par_maint_poth"]; // Updated maintenance extent for pothole filling
+
         // Ensure that the method to re-calculate index values is called after return
 
         return segment;
@@ -144,6 +159,37 @@ public static class RoadSegmentFactoryMC
             throw new FormatException($"Date for '{errorLabel}' is not in right format. Expecting 'yyyyMMdd'. Details: {ex.Message}", ex);
         }
     }
+
+    /// <summary>
+    /// Gets the expected surface life for a segment, first checking if a specific value is provided in the input data for the segment, 
+    /// and if not, looking up a default value based on the surface class. This method ensures that a valid expected surface life value is 
+    /// always returned, either from the input data or from the lookups, and throws an exception if neither is available or if the surface 
+    /// class is unrecognized. 
+    /// </summary>
+    /// <param name="model">Framework Model</param>
+    /// <param name="segment">Road segment for which to get the expected surface life</param>
+    /// <returns>Expected surface life value</returns>
+    /// <exception cref="Exception">Thrown when the surface class is unrecognized or no valid expected surface life value is available  </exception>
+    private static double GetExpectedSurfaceLifeSafe(ModelBase model, RoadSegmentMC segment)
+    {
+        double rawValue = model.GetInputDataNumber(segment.ElementIndex, "inp_surf_life_expected");
+        if (rawValue > 0) return rawValue;
+
+        switch (segment.SurfaceClass)
+        {
+            case "cs":
+                return Convert.ToDouble(model.Lookups["surf_life_exp"]["default_cs"]);
+            case "slurry":
+                return Convert.ToDouble(model.Lookups["surf_life_exp"]["default_slurry"]);
+            case "ac":
+                return Convert.ToDouble(model.Lookups["surf_life_exp"]["default_ac"]);
+            case "ogpa":
+                return Convert.ToDouble(model.Lookups["surf_life_exp"]["default_ogpa"]);
+            default:
+                throw new Exception($"Unexpected surface class '{segment.SurfaceClass}' for elementIndex {segment.ElementIndex}. Cannot determine default expected surface life.");
+        }
+    }
+
 
 }
 

@@ -250,7 +250,7 @@ public class RoadSegmentMC
 
     #endregion
 
-    #region ONRC and Carriageway Attributes
+    #region ONRC/Carriageway and Rainfall Attributes
 
     private string _urbanRural;
     private string _onrc;    
@@ -273,6 +273,11 @@ public class RoadSegmentMC
         set => _onrc = value?.ToLower();
     }
             
+    /// <summary>
+    /// Annual Rainfall, in mm
+    /// </summary>
+    public double RainfallMM { get; set; }
+
     #endregion
 
     #region Traffic and Growth
@@ -342,9 +347,67 @@ public class RoadSegmentMC
     /// Texture depth increment for the episode, in mm/year
     /// </summary>
     public double TextureIncrement { get; set; }
-     
+
     #endregion
-    
+
+    #region Maintenance
+
+
+    /// <summary>
+    /// Extent of Pavement-related Routine Maintenance (excluding Pothole Filling), as fraction of total length (value 0 to 1), triggered in the period. 
+    /// </summary>
+    public double MaintenancePavement { get; set; }
+
+    /// <summary>
+    /// Extent of Pothole Filling Routine Maintenance, as fraction of total length (value 0 to 1), triggered in the period. 
+    /// </summary>
+    public double MaintenancePotfill { get; set; }
+
+
+    #endregion
+
+    /// <summary>
+    /// Updates the sinks mapping back to parameter values in the model. 
+    /// </summary>
+    /// <param name="numModParamValues">Return value: Sink holding values for numeric parameters (to be updated by Domain Model). Keys are parameter names, values are assigned values</param>
+    /// <param name="textModParamValues">Return value: Sink holding values for text parameters (to be updated by Domain Model). Keys are parameter names, values are assigned values</param>     
+    public void SetParameterValues(Action<string, double> numModParamValues, Action<string, string> textModParamValues)
+    {
+        numModParamValues("par_adt", this.AverageDailyTraffic);
+        numModParamValues("par_hcv", this.HeavyVehiclesPerDay);
+
+        numModParamValues("par_pave_age", this.PavementAge);
+        numModParamValues("par_pave_remlife", this.PavementRemainingLife);
+        numModParamValues("par_pave_life_ach", this.PavementAchievedLife);
+        
+        textModParamValues("par_surf_mat", this.SurfaceMaterial);
+        textModParamValues("par_surf_class", this.SurfaceClass);        
+        numModParamValues("par_surf_thick", this.SurfaceThickness);
+        numModParamValues("par_surf_layers", this.SurfaceNumberOfLayers);
+        textModParamValues("par_surf_func", this.SurfaceFunction);
+        numModParamValues("par_surf_exp_life", this.SurfaceExpectedLife);
+        numModParamValues("par_surf_age", this.SurfaceAge);
+        numModParamValues("par_surf_life_ach", this.SurfaceAchievedLifePercent);
+        numModParamValues("par_surf_remain_life", this.SurfaceRemainingLife);
+        
+        numModParamValues("par_rut_increm", this.RutIncrement);
+        numModParamValues("par_rut", this.RutMean);
+
+        numModParamValues("par_iri_increm", this.IRIIncrement);
+        numModParamValues("par_iri", this.IRIMean);
+
+        numModParamValues("par_text_increm", this.TextureIncrement);
+        numModParamValues("par_text", this.TextureMean);
+
+        numModParamValues("par_maint_pa", this.MaintenancePavement);
+        numModParamValues("par_maint_poth", this.MaintenancePotfill);
+
+        // The following are Network Parameters - to be set automatically by the framework model:        
+        //para_sla_rank
+        //para_rut_rank
+        //para_iri_rank
+
+    }
 
 }
 

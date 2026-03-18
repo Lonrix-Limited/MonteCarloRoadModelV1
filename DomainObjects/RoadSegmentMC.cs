@@ -329,9 +329,14 @@ public class RoadSegmentMC
     public double IRIIncrement { get; set; }
 
     /// <summary>
-    /// Mean Rut Depth in mm.    
+    /// Mean rut depth (mm) — latent underlying condition state used for deterioration   
     /// </summary>
-    public double RutMean { get; set; }
+    public double RutMeanLatent { get; set; }
+
+    /// <summary>
+    /// Mean rut depth (mm) — observed condition state including random fluctuation   
+    /// </summary>
+    public double RutMeanObserved { get; set; }
 
     /// <summary>
     /// Rut increment in mm/year for the episode    
@@ -391,7 +396,8 @@ public class RoadSegmentMC
         numModParamValues("par_surf_remain_life", this.SurfaceRemainingLife);
         
         numModParamValues("par_rut_increm", this.RutIncrement);
-        numModParamValues("par_rut", this.RutMean);
+        numModParamValues("par_rut", this.RutMeanLatent);
+        numModParamValues("par_rut_obs", this.RutMeanObserved);
 
         numModParamValues("par_iri_increm", this.IRIIncrement);
         numModParamValues("par_iri", this.IRIMean);

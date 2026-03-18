@@ -56,10 +56,12 @@ public class Incrementer
         //--------------------------------------------------------------------------------------------------------------------------------------------
 
         // Rut Depth
-        double newValue = segment.RutMean + segment.RutIncrement;
-        double standardDeviation = _domainModel.SubModels.RutInrementResidualSDFunction.GetValue(segment.RutMean);
+        double newValue = segment.RutMeanLatent + segment.RutIncrement;
+        double standardDeviation = _domainModel.SubModels.RutInrementResidualSDFunction.GetValue(segment.RutMeanLatent);
         double residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
-        segment.RutMean = newValue + residual;
+        segment.RutMeanLatent = newValue;
+        segment.RutMeanObserved = segment.RutMeanLatent + residual;  // Update the observed rut mean with the residual to reflect the variability in the increment
+
 
         // IRI 
         newValue = segment.IRIMean + segment.IRIIncrement;
@@ -102,7 +104,7 @@ public class Incrementer
     {
         Dictionary<string, object> inputParameters = new Dictionary<string, object>
         {
-            { "rut_mean", segment.RutMean },
+            { "rut_mean", segment.RutMeanLatent },
             { "iri_mean", segment.IRIMean },
             { "surf_age", segment.SurfaceAge },
             { "pre_potfill_mtc_extent", segment.MaintenancePotfill },
@@ -160,7 +162,7 @@ public class Incrementer
     {        
         Dictionary<string, double> inputParameters = new Dictionary<string, double>
         {
-            { "rut_mean_pre", segment.RutMean },
+            { "rut_mean_pre", segment.RutMeanLatent },
             { "iri_mean_pre", segment.IRIMean },
             { "surf_age", segment.SurfaceAge },
             { "pre_potfill_mtc_extent", segment.MaintenancePotfill },
@@ -203,7 +205,7 @@ public class Incrementer
     {
         Dictionary<string, double> inputParameters = new Dictionary<string, double>
         {
-            { "rut_mean_pre", segment.RutMean },
+            { "rut_mean_pre", segment.RutMeanLatent },
             { "iri_mean_pre", segment.IRIMean },
             { "surf_age", segment.SurfaceAge },
             { "pre_potfill_mtc_extent", segment.MaintenancePotfill },
@@ -245,7 +247,7 @@ public class Incrementer
     {
         Dictionary<string, object> inputParameters = new Dictionary<string, object>
         {
-            { "rut_mean_pre", segment.RutMean },
+            { "rut_mean_pre", segment.RutMeanLatent },
             { "iri_mean_pre", segment.IRIMean },
             { "surf_age", segment.SurfaceAge },
             { "pre_potfill_mtc_extent", segment.MaintenancePotfill },
@@ -289,7 +291,7 @@ public class Incrementer
     {
         Dictionary<string, object> inputParameters = new Dictionary<string, object>
         {
-            { "rut_mean_pre", segment.RutMean },
+            { "rut_mean_pre", segment.RutMeanLatent },
             { "iri_mean_pre", segment.IRIMean },
             { "surf_age", segment.SurfaceAge },
             { "pre_potfill_mtc_extent", segment.MaintenancePotfill },

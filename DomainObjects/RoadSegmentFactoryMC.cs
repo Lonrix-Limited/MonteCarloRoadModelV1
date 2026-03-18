@@ -59,7 +59,7 @@ public static class RoadSegmentFactoryMC
 
         // High Speed Data - Rutting, Roughness (IRI) and Texture Depth
         segment.HSDSurveyDate = GetDateFromISO(model.GetInputDataText(segment.ElementIndex, "inp_hsd_survey_date"),"HSD Survey Date");
-        segment.RutMean = model.GetInputDataNumber(segment.ElementIndex, "inp_rut_mean");
+        segment.RutMeanLatent = model.GetInputDataNumber(segment.ElementIndex, "inp_rut_mean");
         segment.RutIncrement = Math.Max(0.01,model.GetInputDataNumber(segment.ElementIndex, "inp_rut_rate"));
 
         segment.IRIMean = model.GetInputDataNumber(segment.ElementIndex, "inp_iri_mean");        
@@ -123,7 +123,8 @@ public static class RoadSegmentFactoryMC
         
         //Rutting and IRI
         segment.RutIncrement = numParamValues["par_rut_increm"];  // Updated Rut Increment for the episode
-        segment.RutMean = numParamValues["par_rut"];              // Updated Rut value
+        segment.RutMeanLatent = numParamValues["par_rut"];              // Updated Rut value
+        segment.RutMeanObserved = numParamValues["par_rut_obs"];              // Updated Rut value
 
         segment.IRIIncrement = numParamValues["par_iri_increm"];  // Updated IRI increment for the episode
         segment.IRIMean = numParamValues["par_iri"];  // Updated IRI value

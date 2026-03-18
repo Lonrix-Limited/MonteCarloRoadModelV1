@@ -32,7 +32,7 @@ public class Initialiser
         segment.PavementAge = GetPavementAge(segment); 
         segment.SurfaceAge = GetSurfacingAge(segment); 
         
-        segment.RutMean = GetInitialRuttingValue(segment);
+        segment.RutMeanLatent = GetInitialRuttingValue(segment);
         segment.RutIncrement = GetRutIncrementEstimate(segment);
 
         segment.IRIMean = GetInitialIRIValue(segment);
@@ -122,7 +122,7 @@ public class Initialiser
             return Resetter.GetRutResetValue(segment, _domainModel.SubModels, "rehab", _frameworkModel.Random);
         }
 
-        double ruttingRaw = segment.RutMean;
+        double ruttingRaw = segment.RutMeanLatent;
 
         // If segment has been resurfaced, determine the rutting exceedance and the reset
         bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
@@ -154,7 +154,7 @@ public class Initialiser
             return Incrementer.GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
         }
 
-        double ruttingRaw = segment.RutMean;
+        double ruttingRaw = segment.RutMeanLatent;
 
         // If segment has been resurfaced, determine the rutting exceedance and the reset
         bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;

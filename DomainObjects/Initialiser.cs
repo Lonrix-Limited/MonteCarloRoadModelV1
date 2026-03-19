@@ -33,12 +33,21 @@ public class Initialiser
         segment.SurfaceAge = GetSurfacingAge(segment); 
         
         segment.RutMeanLatent = GetInitialRuttingValue(segment);
+        double standardDeviation = _domainModel.SubModels.RutInrementResidualSDFunction.GetValue(segment.RutMeanLatent);
+        double residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+        segment.RutMeanObserved = segment.RutMeanLatent + residual;
         segment.RutIncrement = GetRutIncrementEstimate(segment);
-
-        segment.IRIMean = GetInitialIRIValue(segment);
+        
+        segment.IRIMeanLatent = GetInitialIRIValue(segment);
+        standardDeviation = _domainModel.SubModels.IRIInrementResidualSDFunction.GetValue(segment.IRIMeanLatent);
+        residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+        segment.IRIMeanObserved = segment.IRIMeanLatent + residual;
         segment.IRIIncrement = GetIRIIncrementEstimate(segment);
 
-        segment.TextureMean = GetInitialTextureValue(segment);
+        segment.TextureMeanLatent = GetInitialTextureValue(segment);
+        standardDeviation = _domainModel.SubModels.TextureInrementResidualSDFunction.GetValue(segment.TextureMeanLatent);
+        residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+        segment.TextureMeanObserved = segment.TextureMeanLatent + residual;
         segment.TextureIncrement = GetTextureIncrementEstimate(segment);
 
 
@@ -196,7 +205,7 @@ public class Initialiser
             return Resetter.GetIRIResetValue(segment, _domainModel.SubModels, "rehab", _frameworkModel.Random);
         }
 
-        double iriRaw = segment.IRIMean;
+        double iriRaw = segment.IRIMeanLatent;
 
         // If segment has been resurfaced, determine the IRI exceedance and the reset
         bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
@@ -228,7 +237,7 @@ public class Initialiser
             return Incrementer.GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
         }
 
-        double iriRaw = segment.IRIMean;
+        double iriRaw = segment.IRIMeanLatent;
 
         // If segment has been resurfaced, determine the IRI exceedance and the reset
         bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
@@ -270,7 +279,7 @@ public class Initialiser
             return Resetter.GetTextureDepthResetValue(segment, _domainModel.SubModels, "rehab", _frameworkModel.Random);
         }
 
-        double textureRaw = segment.TextureMean;
+        double textureRaw = segment.TextureMeanLatent;
 
         // If segment has been resurfaced, determine the Texture exceedance and the reset
         bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
@@ -302,7 +311,7 @@ public class Initialiser
             return Incrementer.GetTextureIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
         }
 
-        double textureRaw = segment.TextureMean;
+        double textureRaw = segment.TextureMeanLatent;
         // If segment has been resurfaced, determine the Texture exceedance and the reset
         bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
         if (hasBeenResurfaced)

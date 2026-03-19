@@ -319,9 +319,14 @@ public class RoadSegmentMC
 
     
     /// <summary>
-    /// Mean IRI (mm/m) for the segment
+    /// Mean IRI (mm/m) for the segment — latent underlying condition state used for deterioration
     /// </summary>
-    public double IRIMean { get; set; }
+    public double IRIMeanLatent { get; set; }
+
+    /// <summary>
+    /// Mean IRI (mm/m) for the segment — observed condition state including random fluctuation
+    /// </summary>
+    public double IRIMeanObserved { get; set; }
 
     /// <summary>
     /// Episode Increment for IRI in mm/m/year. 
@@ -344,9 +349,14 @@ public class RoadSegmentMC
     public double RutIncrement { get; set; }
 
     /// <summary>
-    /// Texture depth mean for segment, in mm
+    /// Texture depth mean for segment, in mm — latent underlying condition state used for deterioration
     /// </summary>
-    public double TextureMean { get; set; }
+    public double TextureMeanLatent { get; set; }
+
+    /// <summary>
+    /// Texture depth mean for segment, in mm — observed condition state including random fluctuation
+    /// </summary>
+    public double TextureMeanObserved { get; set; }
 
     /// <summary>
     /// Texture depth increment for the episode, in mm/year
@@ -370,6 +380,8 @@ public class RoadSegmentMC
 
 
     #endregion
+
+    #region Helper Methods
 
     /// <summary>
     /// Updates the sinks mapping back to parameter values in the model. 
@@ -400,10 +412,12 @@ public class RoadSegmentMC
         numModParamValues("par_rut_obs", this.RutMeanObserved);
 
         numModParamValues("par_iri_increm", this.IRIIncrement);
-        numModParamValues("par_iri", this.IRIMean);
+        numModParamValues("par_iri", this.IRIMeanLatent);
+        numModParamValues("par_iri_obs", this.IRIMeanObserved);
 
         numModParamValues("par_text_increm", this.TextureIncrement);
-        numModParamValues("par_text", this.TextureMean);
+        numModParamValues("par_text", this.TextureMeanLatent);
+        numModParamValues("par_text_obs", this.TextureMeanObserved);
 
         numModParamValues("par_maint_pa", this.MaintenancePavement);
         numModParamValues("par_maint_poth", this.MaintenancePotfill);
@@ -414,6 +428,9 @@ public class RoadSegmentMC
         //para_iri_rank
 
     }
+
+    
+    #endregion
 
 }
 

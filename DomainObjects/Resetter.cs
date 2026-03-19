@@ -257,7 +257,7 @@ public class Resetter
         return new Dictionary<string, object>
         {
             { "rut_mean_pre", segment.RutMeanLatent },
-            { "iri_mean_pre", segment.IRIMean },
+            { "iri_mean_pre", segment.IRIMeanLatent },
             { "surf_age", segment.SurfaceAge },            
             { "pre1_rea_mtc_extent", segment.MaintenancePavement },
             { "adt", segment.AverageDailyTraffic },

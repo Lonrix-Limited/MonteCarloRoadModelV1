@@ -62,10 +62,10 @@ public static class RoadSegmentFactoryMC
         segment.RutMeanLatent = model.GetInputDataNumber(segment.ElementIndex, "inp_rut_mean");
         segment.RutIncrement = Math.Max(0.01,model.GetInputDataNumber(segment.ElementIndex, "inp_rut_rate"));
 
-        segment.IRIMean = model.GetInputDataNumber(segment.ElementIndex, "inp_iri_mean");        
+        segment.IRIMeanLatent = model.GetInputDataNumber(segment.ElementIndex, "inp_iri_mean");        
         segment.IRIIncrement = Math.Max(0.001, model.GetInputDataNumber(segment.ElementIndex, "inp_iri_rate"));
 
-        segment.TextureMean = model.GetInputDataNumber(segment.ElementIndex, "inp_text_mean");
+        segment.TextureMeanLatent = model.GetInputDataNumber(segment.ElementIndex, "inp_text_mean");
         segment.TextureIncrement = Math.Min(-0.01, model.GetInputDataNumber(segment.ElementIndex, "inp_text_rate"));
 
         // Routine Maintenance 
@@ -127,10 +127,12 @@ public static class RoadSegmentFactoryMC
         segment.RutMeanObserved = numParamValues["par_rut_obs"];              // Updated Rut value
 
         segment.IRIIncrement = numParamValues["par_iri_increm"];  // Updated IRI increment for the episode
-        segment.IRIMean = numParamValues["par_iri"];  // Updated IRI value
+        segment.IRIMeanLatent = numParamValues["par_iri"];  // Updated IRI latent value
+        segment.IRIMeanObserved = numParamValues["par_iri_obs"];  // Updated IRI observed value
 
         segment.TextureIncrement = numParamValues["par_text_increm"];  // Updated Texture increment for the episode
-        segment.TextureMean = numParamValues["par_text"];  // Updated Texture value
+        segment.TextureMeanLatent = numParamValues["par_text"];  // Updated Texture latent value
+        segment.TextureMeanObserved = numParamValues["par_text_obs"];  // Updated Texture observed value
 
         // Routine Maintenance
         segment.MaintenancePavement = numParamValues["par_maint_pa"]; // Updated maintenance extent for pavement

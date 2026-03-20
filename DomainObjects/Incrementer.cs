@@ -55,9 +55,12 @@ public class Incrementer
         // add a residual for the current year
         //--------------------------------------------------------------------------------------------------------------------------------------------
 
-        // Rut Depth
+        // Check if we need to draw a new increment for rut and IRI based on the episode length. This will update the RutIncrement and IRIIncrement properties of the segment as needed
+        CheckRutAndIRIIncrementForEpisode(segment, _domainModel.Constants.MaximumEpisodeLengthRutAndIRI);
+
+        // Rut Depth        
         double newValue = segment.RutMeanLatent + segment.RutIncrement;
-        double standardDeviation = _domainModel.SubModels.RutInrementResidualSDFunction.GetValue(segment.RutMeanLatent);
+        double standardDeviation = _domainModel.SubModels.RutInrementResidualSDFunction.GetValue(newValue);
         double residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
         segment.RutMeanLatent = newValue;
         segment.RutMeanObserved = segment.RutMeanLatent + residual;  // Update the observed rut mean with the residual to reflect the variability in the increment
@@ -65,14 +68,17 @@ public class Incrementer
 
         // IRI 
         newValue = segment.IRIMeanLatent + segment.IRIIncrement;
-        standardDeviation = _domainModel.SubModels.IRIInrementResidualSDFunction.GetValue(segment.IRIMeanLatent);
+        standardDeviation = _domainModel.SubModels.IRIInrementResidualSDFunction.GetValue(newValue);
         residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
         segment.IRIMeanLatent = newValue;
         segment.IRIMeanObserved = segment.IRIMeanLatent + residual;
 
         // Texture Depth
+        // Check if we need to draw a new increment for texture based on the episode length. This will update the TextureIncrement property of the segment as needed
+        CheckTextureIncrementForEpisode(segment, _domainModel.Constants.MaximumEpisodeLengthTexture);
+
         newValue = segment.TextureMeanLatent + segment.TextureIncrement;
-        standardDeviation = _domainModel.SubModels.TextureInrementResidualSDFunction.GetValue(segment.TextureMeanLatent);
+        standardDeviation = _domainModel.SubModels.TextureInrementResidualSDFunction.GetValue(newValue);
         residual =  _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
         segment.TextureMeanLatent = newValue;
         segment.TextureMeanObserved = segment.TextureMeanLatent + residual;
@@ -86,6 +92,47 @@ public class Incrementer
         return segment;
 
     }
+
+
+    private void CheckRutAndIRIIncrementForEpisode(RoadSegmentMC segment, int maximumEpisodeLength)
+    {
+        if (segment.RutAndIRIIncrementEpisodeLength < maximumEpisodeLength)
+        {
+            // No need to draw a new increment for rut and IRI
+
+            //Increment the episode length for rut and IRI increments
+            segment.RutAndIRIIncrementEpisodeLength++;
+        }
+        else
+        {
+            // Need to draw a new increment for rut and IRI, and reset the episode length
+            segment.RutIncrement = GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+            segment.IRIIncrement = GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+
+            //Reset the episode length to 0
+            segment.RutAndIRIIncrementEpisodeLength = 1;
+        }        
+    }
+
+    private void CheckTextureIncrementForEpisode(RoadSegmentMC segment, int maximumEpisodeLength)
+    {
+        if (segment.TextureIncrementEpisodeLength < maximumEpisodeLength)
+        {
+            // No need to draw a new increment for rut and IRI
+
+            //Increment the episode length for rut and IRI increments
+            segment.TextureIncrementEpisodeLength++;
+        }
+        else
+        {
+            // Need to draw a new increment for rut and IRI, and reset the episode length
+            segment.TextureIncrement = GetTextureIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+
+            //Reset the episode length to 0
+            segment.TextureIncrementEpisodeLength = 1;
+        }
+    }
+    
 
     public static double GetRutIncrementForEpisode(RoadSegmentMC segment, SubModelDefinitions subModels, Random random)
     {        

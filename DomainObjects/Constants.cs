@@ -45,6 +45,11 @@ public class Constants
     private int _minPeriodsBetweenACHeavyMaint;
 
 
+    // Episode Lengths for deterioration rates
+    private int _episodeLengthRutAndIRI;
+    private int _episodeLengthTexture;
+
+
     /// <summary>
     /// Base date for the model run. Maps to lookup set "gernal" and setting key "base_date".
     /// </summary>
@@ -250,6 +255,22 @@ public class Constants
         get { return _minPeriodsBetweenACHeavyMaint; }
     }
 
+    /// <summary>
+    /// Maximum episode length for assigned deterioration rate for Rut and IRI. If last draw of random rate is longer than this ago, then draw new
+    /// </summary>
+    public int MaximumEpisodeLengthRutAndIRI
+    {
+        get { return _episodeLengthRutAndIRI; }
+    }
+
+    /// <summary>
+    /// Maximum episode length for assigned deterioration rate for Texture Depth. If last draw of random rate is longer than this ago, then draw new
+    /// </summary>
+    public int MaximumEpisodeLengthTexture
+    {
+        get { return _episodeLengthTexture; }
+    }
+
     public Constants(Dictionary<string, Dictionary<string, object>> lookupSets)
     {        
         _baseDate = JCass_Core.Utils.HelperMethods.ParseDateNoTime(lookupSets["general"]["base_date"]);
@@ -287,7 +308,10 @@ public class Constants
         // Related to MCDA Treatment Triggering
         _maxSlaForACHeavyMaint = Convert.ToDouble(lookupSets["mcda_treatment_triggering"]["ac_hmaint_maximum_sla"]);
         _minPeriodsBetweenACHeavyMaint = Convert.ToInt32(lookupSets["mcda_treatment_triggering"]["ac_hmaint_min_periods_between"]);
-                
+
+        _episodeLengthRutAndIRI = Convert.ToInt32(lookupSets["episode_length_max"]["rut_and_iri"]);
+        _episodeLengthTexture = Convert.ToInt32(lookupSets["episode_length_max"]["texture"]);
+
     }
 
 

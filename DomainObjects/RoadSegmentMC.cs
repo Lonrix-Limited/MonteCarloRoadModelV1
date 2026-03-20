@@ -349,6 +349,12 @@ public class RoadSegmentMC
     public double RutIncrement { get; set; }
 
     /// <summary>
+    /// Episode length for Rut and IRI increments, in years. This value is reset, and Rut and IRI increments are re-drawn 
+    /// when current episode length exceeds the maximum allowed in Constants.EpisodeLengthRutAndIRI
+    /// </summary>
+    public int RutAndIRIIncrementEpisodeLength { get; set; }
+
+    /// <summary>
     /// Texture depth mean for segment, in mm — latent underlying condition state used for deterioration
     /// </summary>
     public double TextureMeanLatent { get; set; }
@@ -362,6 +368,13 @@ public class RoadSegmentMC
     /// Texture depth increment for the episode, in mm/year
     /// </summary>
     public double TextureIncrement { get; set; }
+
+    /// <summary>
+    /// Episode length for texture increment, in years. This value is reset, and Increment is re-drawn when current episode length exceeds the
+    /// maximum allowed in Constants.EpisodeLengthTexture
+    /// </summary>
+    public int TextureIncrementEpisodeLength { get; set; }
+
 
     #endregion
 
@@ -410,6 +423,7 @@ public class RoadSegmentMC
         numModParamValues("par_rut_increm", this.RutIncrement);
         numModParamValues("par_rut", this.RutMeanLatent);
         numModParamValues("par_rut_obs", this.RutMeanObserved);
+        numModParamValues("par_rut_iri_epi_len", this.RutAndIRIIncrementEpisodeLength);
 
         numModParamValues("par_iri_increm", this.IRIIncrement);
         numModParamValues("par_iri", this.IRIMeanLatent);
@@ -418,6 +432,7 @@ public class RoadSegmentMC
         numModParamValues("par_text_increm", this.TextureIncrement);
         numModParamValues("par_text", this.TextureMeanLatent);
         numModParamValues("par_text_obs", this.TextureMeanObserved);
+        numModParamValues("par_text_epi_len", this.TextureIncrementEpisodeLength);
 
         numModParamValues("par_maint_pa", this.MaintenancePavement);
         numModParamValues("par_maint_poth", this.MaintenancePotfill);

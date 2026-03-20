@@ -61,12 +61,14 @@ public static class RoadSegmentFactoryMC
         segment.HSDSurveyDate = GetDateFromISO(model.GetInputDataText(segment.ElementIndex, "inp_hsd_survey_date"),"HSD Survey Date");
         segment.RutMeanLatent = model.GetInputDataNumber(segment.ElementIndex, "inp_rut_mean");
         segment.RutIncrement = Math.Max(0.01,model.GetInputDataNumber(segment.ElementIndex, "inp_rut_rate"));
+        segment.RutAndIRIIncrementEpisodeLength = 1; // Initially 1
 
         segment.IRIMeanLatent = model.GetInputDataNumber(segment.ElementIndex, "inp_iri_mean");        
         segment.IRIIncrement = Math.Max(0.001, model.GetInputDataNumber(segment.ElementIndex, "inp_iri_rate"));
 
         segment.TextureMeanLatent = model.GetInputDataNumber(segment.ElementIndex, "inp_text_mean");
         segment.TextureIncrement = Math.Min(-0.01, model.GetInputDataNumber(segment.ElementIndex, "inp_text_rate"));
+        segment.TextureIncrementEpisodeLength = 1; // Initially 1
 
         // Routine Maintenance 
         segment.MaintenancePavement = model.GetInputDataNumber(segment.ElementIndex, "inp_maint_pa_ext");
@@ -125,6 +127,7 @@ public static class RoadSegmentFactoryMC
         segment.RutIncrement = numParamValues["par_rut_increm"];  // Updated Rut Increment for the episode
         segment.RutMeanLatent = numParamValues["par_rut"];              // Updated Rut value
         segment.RutMeanObserved = numParamValues["par_rut_obs"];              // Updated Rut value
+        segment.RutAndIRIIncrementEpisodeLength = Convert.ToInt32(numParamValues["par_rut_iri_epi_len"]);
 
         segment.IRIIncrement = numParamValues["par_iri_increm"];  // Updated IRI increment for the episode
         segment.IRIMeanLatent = numParamValues["par_iri"];  // Updated IRI latent value
@@ -133,6 +136,7 @@ public static class RoadSegmentFactoryMC
         segment.TextureIncrement = numParamValues["par_text_increm"];  // Updated Texture increment for the episode
         segment.TextureMeanLatent = numParamValues["par_text"];  // Updated Texture latent value
         segment.TextureMeanObserved = numParamValues["par_text_obs"];  // Updated Texture observed value
+        segment.TextureIncrementEpisodeLength = Convert.ToInt32(numParamValues["par_text_epi_len"]);
 
         // Routine Maintenance
         segment.MaintenancePavement = numParamValues["par_maint_pa"]; // Updated maintenance extent for pavement

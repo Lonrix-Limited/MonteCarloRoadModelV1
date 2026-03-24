@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using JCass_ModelCore.Models;
+using JCass_ModelCore.Treatments;
 
 namespace MonteCarloRoadModelV1.DomainObjects;
 
@@ -19,22 +20,123 @@ public class Resetter
         _domainModel = domainModel ?? throw new ArgumentNullException(nameof(domainModel), "Domain model cannot be null");
     }
 
-    public RoadSegmentMC ResetSegment(int iElemIndex)
+    public RoadSegmentMC ResetSegment(RoadSegmentMC segment, int period, TreatmentInstance treatment)
     {
+        // if treatment is null, return segment without changes
+        if (treatment == null) return segment;
 
-        if (iElemIndex == 8426)
-        {
-            int kk = 9;
-        }
+        bool isRehabTreatment = treatment.TreatmentName.ToLower().Contains("rehab");
+        string treatmentTypeCode = isRehabTreatment ? "rehab" : "resurf";
 
-        // Create a new RoadSegmentMC object based purely on the raw data provided in the string array.
-        RoadSegmentMC segment = RoadSegmentFactoryMC.GetFromRawData(_frameworkModel, iElemIndex);
+        // Reset where needed, or Increment those that do not reset on treatment, such as traffic.
+        // Keep the code same order as the model parameter list
 
-        
+        segment.AverageDailyTraffic = segment.AverageDailyTraffic * (1 + segment.TrafficGrowthPercent / 100);
+        // No need to reset HCV count as it is automatically calculated based on the AverageDailyTraffic and HCVPercent
 
+        segment.PavementAge = segment.PavementAge + 1;
+        if (treatment.TreatmentName.ToLower().Contains("rehab")) segment.PavementAge = 0;  // Reset pavement age to 0 for rehab treatments. 
+
+        segment.PavementRemainingLife = Convert.ToDouble(_frameworkModel.Lookups["pavement_expected_life"][segment.ONRC]);
+
+        // No need to update Pavement Life Achieved and HCV Risk because it is automatically calculated based on the HCV and Pavement Life Achieved
+
+        // Update surfacing age, class, material, thickness, function, expected life based on the treatment being applied. 
+        UpdateSurfacingPropertiesForTreatment(segment, treatment);
+
+
+        //--------------------------------------------------------------------------------------------------------------------------------------------
+        // HSD Increments. When treatment is applied, always draw a new increment for the episode
+        //--------------------------------------------------------------------------------------------------------------------------------------------
+
+        // Rut Depth                
+        double newValue = GetRutResetValue(segment, _domainModel.SubModels, treatmentTypeCode, _frameworkModel.Random); //Reset value.
+        segment.RutIncrement = Incrementer.GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random); //Get new increment for new eposode.
+        double standardDeviation = _domainModel.SubModels.RutInrementResidualSDFunction.GetValue(newValue);
+        double residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+        segment.RutMeanLatent = newValue;
+        segment.RutMeanObserved = segment.RutMeanLatent + residual;  // Update the observed rut mean with the residual to reflect the variability in the increment
+        segment.RutAndIRIIncrementEpisodeLength = 1;  // Reset episode length to 1 since we are drawing a new increment for the episode
+
+
+        // IRI 
+        newValue = GetIRIResetValue(segment, _domainModel.SubModels, treatmentTypeCode, _frameworkModel.Random); //Reset value.
+        segment.IRIIncrement = Incrementer.GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random); //Get new increment for new eposode.
+        standardDeviation = _domainModel.SubModels.IRIInrementResidualSDFunction.GetValue(newValue);
+        residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+        segment.IRIMeanLatent = newValue;
+        segment.IRIMeanObserved = segment.IRIMeanLatent + residual;
+        // No need to reset episode separately for IRI as it is the same as Rut episode
+
+        // Texture Depth               
+        newValue = GetTextureDepthResetValue(segment, _domainModel.SubModels, treatmentTypeCode, _frameworkModel.Random); //Reset value.
+        segment.TextureIncrement = GetTextureDepthResetValue(segment, _domainModel.SubModels, treatmentTypeCode, _frameworkModel.Random); //Get new increment for new eposode.
+        standardDeviation = _domainModel.SubModels.TextureInrementResidualSDFunction.GetValue(newValue);
+        residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+        segment.TextureMeanLatent = newValue;
+        segment.TextureMeanObserved = segment.TextureMeanLatent + residual;
+        segment.TextureIncrementEpisodeLength = 1;  // Reset episode length to 1 since we are drawing a new increment for the episode
+
+        // Maintenance
+        _domainModel.MaintenanceModel.UpdateRoutineMaintenanceExtents(segment);
 
         return segment;
     }
+
+    #region Surfacing Properties Reset
+
+
+    /// <summary>
+    /// Updates surfacing properties of the given road segment based on the specified treatment. 
+    /// </summary>
+    /// <param name="segment">Segment on which to update surfacing properties</param>
+    /// <param name="treatment">Treatment being applied</param>
+    private void UpdateSurfacingPropertiesForTreatment(RoadSegmentMC segment, TreatmentInstance treatment)
+    {
+        bool isRehabTreatment = treatment.TreatmentName.ToLower().Contains("rehab");
+        // No change in these properties:
+                       
+        // segment.SurfaceExpectedLife 
+
+        segment.SurfaceAge = 0;  
+        segment.SurfaceMaterial = _frameworkModel.Lookups["treat_surf_materials"][treatment.TreatmentName].ToString();
+        segment.SurfaceClass = _frameworkModel.Lookups["treat_surf_class"][treatment.TreatmentName].ToString();
+        if (isRehabTreatment)
+        {
+            segment.SurfaceThickness = Convert.ToDouble(_frameworkModel.Lookups["surf_thickness_new"][segment.SurfaceMaterial]);
+            segment.SurfaceNumberOfLayers = 1;
+
+            // For rehab on chipseal, reset surfacing function to 1; for ac set to "R"
+            segment.SurfaceFunction = segment.SurfaceClass == "cs" ? "1" : "R";            
+        }
+        else
+        {
+            double thicknessAdded = Convert.ToDouble(_frameworkModel.Lookups["surf_thickness_add"][segment.SurfaceMaterial]);
+            segment.SurfaceThickness = segment.SurfaceThickness + thicknessAdded;
+            segment.SurfaceNumberOfLayers += 1;
+            segment.SurfaceFunction = GetNextSurfaceFunction(segment.SurfaceFunction);
+        }
+
+        segment.SurfaceExpectedLife = Convert.ToDouble(_frameworkModel.Lookups["surf_life_exp"][segment.SurfaceExpectedLifeCode]);
+        // Note: surface life achieved and surface remaining life are automatically calculated based on the surface age and expected life
+
+    }
+
+    private string GetNextSurfaceFunction(string currentFunction)
+    {
+        switch (currentFunction)
+        {
+            case "1":
+                return "2";
+            case "2": 
+                return "R";
+            default:
+                return "R";
+        }
+    }
+
+
+    #endregion
 
     #region Rut Reset
 

@@ -23,7 +23,11 @@ public class MonteCarloRoadModelV1 : DomainModelBase
 
     private Incrementer _incrementer;
 
+    private Resetter _resetter;
+
     public SubModelDefinitions SubModels { get; set; }
+
+    public RoutineMaintenanceModeller MaintenanceModel;
 
 
     #endregion
@@ -42,9 +46,11 @@ public class MonteCarloRoadModelV1 : DomainModelBase
     {
         try
         {
-            _initialiser = new Initialiser(this.model, this);
-            //_resetter = new Resetter(this.model, this);
+            _initialiser = new Initialiser(this.model, this);            
             _incrementer = new Incrementer(this.model, this);
+            _resetter = new Resetter(this.model, this);
+            MaintenanceModel = new RoutineMaintenanceModeller(this.model, this);
+
             this.SubModels = new SubModelDefinitions(model.RandomSeed);
 
             this.Constants = new Constants(this.model.Lookups);
@@ -144,10 +150,10 @@ public class MonteCarloRoadModelV1 : DomainModelBase
                        
 
             // Apply Resets
-            //RoadSegmentMC resettedSegment = _resetter.Reset(segment, iPeriod, treatment);
+            RoadSegmentMC resettedSegment = _resetter.ResetSegment(segment, iPeriod, treatment);
             //resettedSegment.UpdateFormulaValues(this.model, this, iPeriod, infoFromModel);
             
-            //resettedSegment.SetParameterValues(numModParamValues, textModParamValues);
+            resettedSegment.SetParameterValues(numModParamValues, textModParamValues);
             
         }
         catch (Exception ex)

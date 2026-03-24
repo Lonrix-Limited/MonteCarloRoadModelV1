@@ -177,6 +177,17 @@ public class RoadSegmentMC
     public double SurfaceExpectedLife { get; set; }
 
     /// <summary>
+    /// Read-only code combining Surface Function, Surface Material and Road Class, used to look up the Surface Expected Life from Lookup Tables. 
+    /// </summary>
+    public string SurfaceExpectedLifeCode
+    {
+        get
+        {
+            return $"{this.SurfaceFunction.ToLower()}_{this.SurfaceMaterial.ToLower()}_{this.RoadClass}";
+        }
+    }
+
+    /// <summary>
     /// Returns the Surface Expective life minus the Surface Age, which gives the remaining life of the surface in years.
     /// </summary>
     public double SurfaceRemainingLife
@@ -277,6 +288,14 @@ public class RoadSegmentMC
     /// Annual Rainfall, in mm
     /// </summary>
     public double RainfallMM { get; set; }
+
+
+    /// <summary>
+    /// Road class based on ONRC, with values 'l', 'm' and 'h' for low, medium and high traffic respectively. This classification
+    /// collapses the ONRC categories into three classes based on traffic volumes. It is used to refine certain aspects such 
+    /// as Expected Surface Life, allowing differentiation but only in 3 classes.
+    /// </summary>
+    public string RoadClass { get; set; }
 
     #endregion
 

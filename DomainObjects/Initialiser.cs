@@ -20,7 +20,7 @@ public class Initialiser
     public RoadSegmentMC InitialiseSegment(int iElemIndex)
     {
 
-        if (iElemIndex == 8426)
+        if (iElemIndex == 2652)
         {
             int kk = 9;
         }
@@ -32,22 +32,16 @@ public class Initialiser
         segment.PavementAge = GetPavementAge(segment); 
         segment.SurfaceAge = GetSurfacingAge(segment); 
         
-        segment.RutMeanLatent = GetInitialRuttingValue(segment);
-        double standardDeviation = _domainModel.SubModels.RutInrementResidualSDFunction.GetValue(segment.RutMeanLatent);
-        double residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
-        segment.RutMeanObserved = segment.RutMeanLatent + residual;
+        segment.RutMeanLatent = GetInitialRuttingValue(segment);        
+        segment.RutMeanObserved = segment.RutMeanLatent;   //Assume initial rut observation is equal to the latent value; Not really true, but for reporting
         segment.RutIncrement = GetRutIncrementEstimate(segment);
         
-        segment.IRIMeanLatent = GetInitialIRIValue(segment);
-        standardDeviation = _domainModel.SubModels.IRIInrementResidualSDFunction.GetValue(segment.IRIMeanLatent);
-        residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
-        segment.IRIMeanObserved = segment.IRIMeanLatent + residual;
+        segment.IRIMeanLatent = GetInitialIRIValue(segment);        
+        segment.IRIMeanObserved = segment.IRIMeanLatent;
         segment.IRIIncrement = GetIRIIncrementEstimate(segment);
 
-        segment.TextureMeanLatent = GetInitialTextureValue(segment);
-        standardDeviation = _domainModel.SubModels.TextureInrementResidualSDFunction.GetValue(segment.TextureMeanLatent);
-        residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
-        segment.TextureMeanObserved = segment.TextureMeanLatent + residual;
+        segment.TextureMeanLatent = GetInitialTextureValue(segment);        
+        segment.TextureMeanObserved = segment.TextureMeanLatent;
         segment.TextureIncrement = GetTextureIncrementEstimate(segment);
 
 

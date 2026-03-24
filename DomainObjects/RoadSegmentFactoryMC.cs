@@ -38,8 +38,8 @@ public static class RoadSegmentFactoryMC
         segment.UrbanRural = model.GetInputDataText(segment.ElementIndex, "inp_urban_rural").ToLower();
         segment.ONRC = model.GetInputDataText(segment.ElementIndex, "inp_onrc").ToLower();
         segment.RainfallMM = model.GetInputDataNumber(segment.ElementIndex, "inp_rainfall");
-        
-        
+        segment.RoadClass = model.Lookups["road_class"][segment.ONRC].ToString();
+
         // Traffic        
         segment.AverageDailyTraffic = Math.Max(1, model.GetInputDataNumber(segment.ElementIndex, "inp_adt")); //Ensure ADT is at least 1
         segment.HeavyVehiclePercentage = model.GetInputDataNumber(segment.ElementIndex, "inp_heavy_perc");        

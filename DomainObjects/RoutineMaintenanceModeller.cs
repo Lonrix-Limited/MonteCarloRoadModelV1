@@ -53,6 +53,35 @@ public class RoutineMaintenanceModeller
 
     }
 
+
+    /// <summary>
+    /// Gets the simulated reduction in Rut Depth (not reset value, but reduction in the current value) after PA maintenance (excluding potfill) based on the extent of maintenance.
+    /// </summary>
+    /// <param name="maintenanceExtent"></param>
+    /// <returns></returns>
+    public double GetRutReductionDueToMaintenance(double maintenanceExtent)
+    {
+        Dictionary<string, object> inputParameters = new Dictionary<string, object>
+        {
+            { "maint_extent", maintenanceExtent }
+        };
+        return _domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator.GetSimulatedValue(inputParameters, _frameworkModel.Random);
+    }
+
+    /// <summary>
+    /// Gets the simulated reduction in IRI (not reset value, but reduction in the current value) after PA maintenance
+    /// </summary>
+    /// <param name="maintenanceExtent"></param>
+    /// <returns></returns>
+    public double GetIRIReductionDueToMaintenance(double maintenanceExtent)
+    {
+        Dictionary<string, object> inputParameters = new Dictionary<string, object>
+        {
+            { "maint_extent", maintenanceExtent }
+        };
+        return _domainModel.SubModels.IRIReductionAfterPaMaintenanceSimulator.GetSimulatedValue(inputParameters, _frameworkModel.Random);
+    }
+
     /// <summary>
     /// Gets the probability of PA maintenance (excluding potfill) for the given road segment based on the appropriate model for the surface class.
     /// </summary>

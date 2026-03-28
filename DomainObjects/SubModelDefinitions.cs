@@ -189,7 +189,21 @@ public class SubModelDefinitions
     /// </summary>
     public DistributionSimulator TextureResetSimulatorACRehab { get; set; }
 
+    #endregion
 
+    #region Rut and IRI Reduction (not reset!) after PA Maintenance, based on Extent
+
+    /// <summary>
+    /// Simulator for the reduction in Rut Depth (not reset value, but reduction in the current value) after PA maintenance 
+    /// (excluding pothole filling), based on the extent of maintenance. 
+    /// </summary>
+    public DistributionSimulator RutReductionAfterPaMaintenanceSimulator { get; set; }
+
+    /// <summary>
+    /// Simulator for the reduction in IRI (not reset value, but reduction in the current value) after PA maintenance 
+    /// (excluding pothole filling), based on the extent of maintenance. 
+    /// </summary>
+    public DistributionSimulator IRIReductionAfterPaMaintenanceSimulator { get; set; }
 
     #endregion
 

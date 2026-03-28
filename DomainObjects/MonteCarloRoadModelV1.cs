@@ -71,6 +71,9 @@ public class MonteCarloRoadModelV1 : DomainModelBase
             // Set up the models for the reset values after treatments
             SetupUtilities.SetupResetModels(this, workFolder);
 
+            // Set up the models for the reduction in condition after PA maintenance
+            SetupUtilities.SetupReductionDueToPaMaintenanceModels(this, workFolder);
+
         }
         catch (Exception ex)
         {

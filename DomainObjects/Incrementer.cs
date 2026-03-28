@@ -56,30 +56,26 @@ public class Incrementer
         //--------------------------------------------------------------------------------------------------------------------------------------------
 
         // Check if we need to draw a new increment for rut and IRI based on the episode length. This will update the RutIncrement and IRIIncrement properties of the segment as needed
-        CheckRutAndIRIIncrementForEpisode(segment, _domainModel.Constants.MaximumEpisodeLengthRutAndIRI);
+        CheckRutAndIRIIncrementForEpisode(segment, _domainModel.Constants.MaximumEpisodeLengthRutAndIRI);               
 
         // Rut Depth        
-        double newValue = segment.RutMeanLatent + segment.RutIncrement;
-        double standardDeviation = _domainModel.SubModels.RutInrementResidualSDFunction.GetValue(newValue);
-        double residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
-        segment.RutMeanLatent = newValue;
-        segment.RutMeanObserved = segment.RutMeanLatent + residual;  // Update the observed rut mean with the residual to reflect the variability in the increment
-
+        IncrementRut(segment);
 
         // IRI 
-        newValue = segment.IRIMeanLatent + segment.IRIIncrement;
-        standardDeviation = _domainModel.SubModels.IRIInrementResidualSDFunction.GetValue(newValue);
-        residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
-        segment.IRIMeanLatent = newValue;
-        segment.IRIMeanObserved = segment.IRIMeanLatent + residual;
+        IncrementIRI(segment);
+
+        if (segment.ElementIndex == 25229)
+        {
+            int debug = 0; // Debugging breakpoint
+        }
 
         // Texture Depth
         // Check if we need to draw a new increment for texture based on the episode length. This will update the TextureIncrement property of the segment as needed
         CheckTextureIncrementForEpisode(segment, _domainModel.Constants.MaximumEpisodeLengthTexture);
 
-        newValue = segment.TextureMeanLatent + segment.TextureIncrement;
-        standardDeviation = _domainModel.SubModels.TextureInrementResidualSDFunction.GetValue(newValue);
-        residual =  _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+        double newValue = segment.TextureMeanLatent + segment.TextureIncrement;
+        double standardDeviation = _domainModel.SubModels.TextureInrementResidualSDFunction.GetValue(newValue);
+        double residual =  _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
         segment.TextureMeanLatent = newValue;
         segment.TextureMeanObserved = segment.TextureMeanLatent + residual;
 
@@ -91,6 +87,56 @@ public class Incrementer
 
         return segment;
 
+    }
+
+    /// <summary>
+    /// Increments the rut depth for the given road segment, taking into account if there was PA maintenance in the preceding period. If there 
+    /// was maintenance on the pavement, it applies a reduction to the rut depth based on the maintenance extent. Otherwise, it calculates a new latent 
+    /// rut mean by adding the rut increment to the previous latent mean, and then adds a residual to get the observed rut mean. The residual is drawn from 
+    /// a normal distribution with a standard deviation that depends on the new latent rut mean.
+    /// </summary>
+    /// <param name="segment"></param>
+    private void IncrementRut(RoadSegmentMC segment)
+    {
+        if (segment.MaintenancePavement > 0)
+        {
+            double reductionDueToMaintenance = _domainModel.MaintenanceModel.GetRutReductionDueToMaintenance(segment.MaintenancePavement);
+            segment.RutMeanLatent = Math.Max(1.5, segment.RutMeanLatent - reductionDueToMaintenance);
+            segment.RutMeanObserved = Math.Max(1.5, segment.RutMeanObserved - reductionDueToMaintenance);
+        }
+        else
+        {
+            double newValue = segment.RutMeanLatent + segment.RutIncrement;
+            double standardDeviation = _domainModel.SubModels.RutInrementResidualSDFunction.GetValue(newValue);
+            double residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+            segment.RutMeanLatent = newValue;
+            segment.RutMeanObserved = segment.RutMeanLatent + residual;  // Update the observed rut mean with the residual to reflect the variability in the increment
+        }        
+    }
+
+    /// <summary>
+    /// Increments the IRI for the given road segment, taking into account if there was PA maintenance in the preceding period. If there
+    /// was maintenance on the pavement, it applies a reduction to the IRI based on the maintenance extent. Otherwise, it calculates a new latent
+    /// IRI mean by adding the IRI increment to the previous latent mean, and then adds a residual to get the observed IRI mean. The residual is drawn from
+    /// a normal distribution with a standard deviation that depends on the new latent IRI mean.
+    /// </summary>
+    /// <param name="segment"></param>
+    private void IncrementIRI(RoadSegmentMC segment)
+    {
+        if (segment.MaintenancePavement > 0)
+        {
+            double reductionDueToMaintenance = _domainModel.MaintenanceModel.GetIRIReductionDueToMaintenance(segment.MaintenancePavement);
+            segment.IRIMeanLatent = Math.Max(0.5, segment.IRIMeanLatent - reductionDueToMaintenance);
+            segment.IRIMeanObserved = Math.Max(0.5, segment.IRIMeanObserved - reductionDueToMaintenance);
+        }
+        else
+        {
+            double newValue = segment.IRIMeanLatent + segment.IRIIncrement;
+            double standardDeviation = _domainModel.SubModels.IRIInrementResidualSDFunction.GetValue(newValue);
+            double residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+            segment.IRIMeanLatent = newValue;
+            segment.IRIMeanObserved = segment.IRIMeanLatent + residual;
+        }
     }
 
 

@@ -156,6 +156,26 @@ public static class SetupUtilities
         domainModel.SubModels.TextureResetSimulatorCSResurf = SetupUtilities.GetDistributionSimulator("text_reset_cs_resurf", allSetupData);
     }
 
+    public static void SetupReductionDueToPaMaintenanceModels(DomainObjects.MonteCarloRoadModelV1 domainModel, string workFolder)
+    {
+        //-----------------  Set up distribution simulators for REDUCTION in Rut and IRI after PA Maintenance ------------------------------------
+
+        string distributionSetupFile = Path.Combine(workFolder, @"domain_model/reduction_after_maint_cohort_rule_plm_setup_for_cassandra.csv");
+        if (!File.Exists(distributionSetupFile)) throw new Exception($"Setup file for Reduction Due to PA Maintenance Distributions not found at: {Path.GetFileName(distributionSetupFile)}");
+        jcDataSet d1 = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
+
+        jcDataSet allSetupData = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
+
+        // Rut Reduction after PA Maintenance simulator
+        domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator = SetupUtilities.GetDistributionSimulator("rut_reduc_after_maint", allSetupData);
+
+        // IRI Reduction after PA Maintenance simulator
+        domainModel.SubModels.IRIReductionAfterPaMaintenanceSimulator = SetupUtilities.GetDistributionSimulator("iri_reduc_after_maint", allSetupData);
+
+    }
+
+
+
     private static jcDataSet GetFilteredDataSet(string parameterName, jcDataSet allSetups)
     {
         jcDataSet setupData = new jcDataSet();

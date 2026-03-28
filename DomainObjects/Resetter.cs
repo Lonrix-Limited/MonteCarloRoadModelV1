@@ -68,9 +68,14 @@ public class Resetter
         segment.IRIMeanObserved = segment.IRIMeanLatent + residual;
         // No need to reset episode separately for IRI as it is the same as Rut episode
 
+        if (segment.ElementIndex == 25229)
+        {
+            int debug = 0; // Debugging breakpoint
+        }
+
         // Texture Depth               
         newValue = GetTextureDepthResetValue(segment, _domainModel.SubModels, treatmentTypeCode, _frameworkModel.Random); //Reset value.
-        segment.TextureIncrement = GetTextureDepthResetValue(segment, _domainModel.SubModels, treatmentTypeCode, _frameworkModel.Random); //Get new increment for new eposode.
+        segment.TextureIncrement = Incrementer.GetTextureIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random); //Get new increment for new eposode.
         standardDeviation = _domainModel.SubModels.TextureInrementResidualSDFunction.GetValue(newValue);
         residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
         segment.TextureMeanLatent = newValue;

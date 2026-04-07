@@ -26,8 +26,10 @@ public class RoutineMaintenanceModeller
     /// <param name="segment"></param>
     public void UpdateRoutineMaintenanceExtents(RoadSegmentMC segment)
     {
+        double calibFactor = 0.8;  //Lower probability of maintenance to better match observed data. TODO: explore further calibration options when more data is available.
+
         // Deal first with PA maintenance (excluding potfill) 
-        double probabilityOfMaintenance = GetMaintenanceProbabilityPA(segment);
+        double probabilityOfMaintenance = calibFactor * GetMaintenanceProbabilityPA(segment);
         double randomValue = _frameworkModel.Random.NextDouble();
         if (randomValue < probabilityOfMaintenance)
         {
@@ -59,13 +61,16 @@ public class RoutineMaintenanceModeller
     /// </summary>
     /// <param name="maintenanceExtent"></param>
     /// <returns></returns>
-    public double GetRutReductionDueToMaintenance(double maintenanceExtent)
+    public double GetRutReductionDueToMaintenance(RoadSegmentMC segment)
     {
-        Dictionary<string, object> inputParameters = new Dictionary<string, object>
+        Dictionary<string, double> inputParameters = new Dictionary<string, double>
         {
-            { "maint_extent", maintenanceExtent }
+            { "maint_extent", segment.MaintenancePavement },
+            { "rut_mean_pre", segment.RutMeanLatent },
+            { "iri_mean_pre", segment.IRIMeanLatent }
         };
-        return _domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator.GetSimulatedValue(inputParameters, _frameworkModel.Random);
+        //return _domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator.GetSimulatedValue(inputParameters, _frameworkModel.Random);
+        return _domainModel.SubModels.RutReductionAfterPaMaintenanceModel.PredictWithRandomError(inputParameters, segment.RutMeanLatent);
     }
 
     /// <summary>
@@ -73,13 +78,16 @@ public class RoutineMaintenanceModeller
     /// </summary>
     /// <param name="maintenanceExtent"></param>
     /// <returns></returns>
-    public double GetIRIReductionDueToMaintenance(double maintenanceExtent)
+    public double GetIRIReductionDueToMaintenance(RoadSegmentMC segment)
     {
-        Dictionary<string, object> inputParameters = new Dictionary<string, object>
+        Dictionary<string, double> inputParameters = new Dictionary<string, double>
         {
-            { "maint_extent", maintenanceExtent }
+            { "maint_extent", segment.MaintenancePavement },
+            { "rut_mean_pre", segment.RutMeanLatent },
+            { "iri_mean_pre", segment.IRIMeanLatent },
+            { "surf_age", segment.SurfaceAge },            
         };
-        return _domainModel.SubModels.IRIReductionAfterPaMaintenanceSimulator.GetSimulatedValue(inputParameters, _frameworkModel.Random);
+        return 0.0; // _domainModel.SubModels.IRIReductionAfterPaMaintenanceModel.PredictWithRandomError(inputParameters, segment.IRIMeanLatent);
     }
 
     /// <summary>

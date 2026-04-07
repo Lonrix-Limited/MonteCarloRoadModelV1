@@ -37,6 +37,10 @@ public static class SetupUtilities
         domainModel.SubModels.RutInrementResidualSDFunction = GetPieceWiseLinearModel("rut_inc_resid", allSetupData);
         domainModel.SubModels.IRIInrementResidualSDFunction = GetPieceWiseLinearModel("iri_inc_resid", allSetupData);
         domainModel.SubModels.TextureInrementResidualSDFunction = GetPieceWiseLinearModel("text_inc_resid", allSetupData);
+
+
+       
+
     }
 
     /// <summary>
@@ -46,8 +50,9 @@ public static class SetupUtilities
     /// </summary>
     /// <param name="domainModel">Monte Carlo domain model</param>
     /// <param name="workFolder">workfolder to find the path to setup CSV files</param>
+    /// <param name="random">Random number generator</param>
     /// <exception cref="Exception"></exception>
-    public static void SetupDistributionSimulators(DomainObjects.MonteCarloRoadModelV1 domainModel, string workFolder)
+    public static void SetupDistributionSimulators(DomainObjects.MonteCarloRoadModelV1 domainModel, string workFolder, Random random)
     {
         //------------------------------------  Set up distribution simulators for increments------------------------------------
 
@@ -59,6 +64,20 @@ public static class SetupUtilities
         domainModel.SubModels.RutIncrementSimulator = SetupUtilities.GetDistributionSimulator("rut_inc", allSetupData);
         domainModel.SubModels.IRIIncrementSimulator = SetupUtilities.GetDistributionSimulator("iri_inc", allSetupData);
         domainModel.SubModels.TextureIncrementSimulator = SetupUtilities.GetDistributionSimulator("text_not_ac_inc", allSetupData);
+
+        //string incremModelSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/increm_iri_model.csv");
+        //if (!System.IO.File.Exists(incremModelSetupFile)) throw new Exception($"IRI Increment model setup data not found at: {System.IO.Path.GetFileName(incremModelSetupFile)}");
+
+        //allSetupData =  CSVHelper.ReadDataFromCsvFile(incremModelSetupFile);
+        //(var coefficients, var residSDPlmSetup) = GetLinearRegressionModelCoefficients(allSetupData);
+        //domainModel.SubModels.IRIIncrementModel = new LinearRegressionModel(coefficients, residSDPlmSetup, false, random);
+
+        //incremModelSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/increm_rut_model.csv");
+        //if (!System.IO.File.Exists(incremModelSetupFile)) throw new Exception($"Rut Increment model setup data not found at: {System.IO.Path.GetFileName(incremModelSetupFile)}");
+
+        //allSetupData = CSVHelper.ReadDataFromCsvFile(incremModelSetupFile);
+        //(coefficients, residSDPlmSetup) = GetLinearRegressionModelCoefficients(allSetupData);
+        //domainModel.SubModels.RutIncrementModel = new LinearRegressionModel(coefficients, residSDPlmSetup, false, random);
 
         //------------------------------------  Set up distribution simulators for Maintenance Extent (PA and Potfill) ------------------------------------
 
@@ -156,21 +175,35 @@ public static class SetupUtilities
         domainModel.SubModels.TextureResetSimulatorCSResurf = SetupUtilities.GetDistributionSimulator("text_reset_cs_resurf", allSetupData);
     }
 
-    public static void SetupReductionDueToPaMaintenanceModels(DomainObjects.MonteCarloRoadModelV1 domainModel, string workFolder)
+    public static void SetupReductionDueToPaMaintenanceModels(DomainObjects.MonteCarloRoadModelV1 domainModel, string workFolder, Random random)
     {
         //-----------------  Set up distribution simulators for REDUCTION in Rut and IRI after PA Maintenance ------------------------------------
 
-        string distributionSetupFile = Path.Combine(workFolder, @"domain_model/reduction_after_maint_cohort_rule_plm_setup_for_cassandra.csv");
-        if (!File.Exists(distributionSetupFile)) throw new Exception($"Setup file for Reduction Due to PA Maintenance Distributions not found at: {Path.GetFileName(distributionSetupFile)}");
-        jcDataSet d1 = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
-
-        jcDataSet allSetupData = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
+        //string distributionSetupFile = Path.Combine(workFolder, @"domain_model/reduction_after_maint_cohort_rule_plm_setup_for_cassandra.csv");
+        //if (!File.Exists(distributionSetupFile)) throw new Exception($"Setup file for Reduction Due to PA Maintenance Distributions not found at: {Path.GetFileName(distributionSetupFile)}");
+        
+        //jcDataSet allSetupData = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
 
         // Rut Reduction after PA Maintenance simulator
-        domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator = SetupUtilities.GetDistributionSimulator("rut_reduc_after_maint", allSetupData);
+       // domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator = SetupUtilities.GetDistributionSimulator("rut_reduc_after_maint", allSetupData);
 
         // IRI Reduction after PA Maintenance simulator
-        domainModel.SubModels.IRIReductionAfterPaMaintenanceSimulator = SetupUtilities.GetDistributionSimulator("iri_reduc_after_maint", allSetupData);
+        //domainModel.SubModels.IRIReductionAfterPaMaintenanceSimulator = SetupUtilities.GetDistributionSimulator("iri_reduc_after_maint", allSetupData);
+
+        //-----------------  Set up distribution simulators for REDUCTION in Rut and IRI after PA Maintenance ------------------------------------
+
+        string distributionSetupFile = Path.Combine(workFolder, @"domain_model/maint_rut_reduction_model.csv");
+        if (!File.Exists(distributionSetupFile)) throw new Exception($"Setup file for Regression Model for Rut Reduction Due to PA Maintenance not found at: {Path.GetFileName(distributionSetupFile)}");
+        
+        jcDataSet allSetupData = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
+        (var coefficients, var residSDPlmSetup) = GetLinearRegressionModelCoefficients(allSetupData);
+        domainModel.SubModels.RutReductionAfterPaMaintenanceModel = new LinearRegressionModel(coefficients,residSDPlmSetup, false, random);
+
+        distributionSetupFile = Path.Combine(workFolder, @"domain_model/maint_iri_reduction_model.csv");
+        if (!File.Exists(distributionSetupFile)) throw new Exception($"Setup file for Regression Model for IRI Reduction Due to PA Maintenance not found at: {Path.GetFileName(distributionSetupFile)}");
+        allSetupData = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
+        (coefficients, residSDPlmSetup) = GetLinearRegressionModelCoefficients(allSetupData);
+        domainModel.SubModels.IRIReductionAfterPaMaintenanceModel = new LinearRegressionModel(coefficients, residSDPlmSetup, false, random);
 
     }
 
@@ -203,5 +236,36 @@ public static class SetupUtilities
             coefs[variableName] = coefValue;
         }
         return coefs;
+    }
+
+    /// <summary>
+    /// Parses variable names and coefficient values from the provided jcDataSet to create a dictionary of coefficients for a linear regression model. 
+    /// The jcDataSet is expected to have columns named "variable" and "coefficient", where "variable" contains the name of the predictor variable and "coefficient" contains the corresponding coefficient value. 
+    /// The resulting dictionary maps variable names to their coefficient values, which can then be used to construct a linear regression model. Intercept should be "(Intercept)" in the variable column of the dataset.
+    /// If there is a variable named 'resid_sd_plm' this is presumed to be NOT a variable in the regression but rather the setup code for a PieceWiseLinearModel that models the residual standard deviation of the 
+    /// regression, and this setup code is returned as a separate string along with the coefficients dictionary.
+    /// </summary>
+    /// <param name="coefsData"></param>
+    /// <returns></returns>
+    private static (Dictionary<string, double> coefficients, string residualSDPlmSetup) GetLinearRegressionModelCoefficients(jcDataSet coefsData)
+    {
+        string residSDPlmSetup = null;
+        Dictionary<string, double> coefs = new Dictionary<string, double>();
+        for (int i = 0; i < coefsData.Count; i++)
+        {
+            Dictionary<string, object> row = coefsData.Row(i);
+            string variableName = row["variable"].ToString();
+            if (variableName == "resid_sd_plm")
+            {
+                // This is not a variable but rather the setup code for the residual SD PLM
+                residSDPlmSetup = row["coefficient"].ToString();                
+            }
+            else
+            {
+                double coefValue = Convert.ToDouble(row["coefficient"]);
+                coefs[variableName] = coefValue;
+            }            
+        }
+        return (coefs, residSDPlmSetup);
     }
 }

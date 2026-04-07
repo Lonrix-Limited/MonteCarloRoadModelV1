@@ -59,7 +59,7 @@ public class MonteCarloRoadModelV1 : DomainModelBase
             string workFolder = model.Configuration.WorkFolder;
 
             // Set up the distribution simulators for the increments for Rut, IRI and Texture
-            SetupUtilities.SetupDistributionSimulators(this, workFolder);
+            SetupUtilities.SetupDistributionSimulators(this, workFolder, this.model.Random);
 
             // Set up the Piecewise Linear Models to calculate the Standard Deviation of the residuals for the increments
             // for Rut, IRI and Texture
@@ -72,7 +72,7 @@ public class MonteCarloRoadModelV1 : DomainModelBase
             SetupUtilities.SetupResetModels(this, workFolder);
 
             // Set up the models for the reduction in condition after PA maintenance
-            SetupUtilities.SetupReductionDueToPaMaintenanceModels(this, workFolder);
+            SetupUtilities.SetupReductionDueToPaMaintenanceModels(this, workFolder, this.model.Random);
 
         }
         catch (Exception ex)

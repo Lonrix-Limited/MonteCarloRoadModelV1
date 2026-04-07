@@ -34,9 +34,19 @@ public class SubModelDefinitions
     public DistributionSimulator RutIncrementSimulator { get; set; }
 
     /// <summary>
+    /// Alternative model for Rut increment prediction, using a Linear Regression model instead of a distribution simulator. 
+    /// </summary>
+    //public LinearRegressionModel RutIncrementModel { get; set; }
+
+    /// <summary>
     /// Simulator for IRI Increment.
     /// </summary>
     public DistributionSimulator IRIIncrementSimulator { get; set; }
+
+    /// <summary>
+    /// Alternative model for IRI increment prediction, using a Linear Regression model instead of a distribution simulator.
+    /// </summary>
+    //public LinearRegressionModel IRIIncrementModel { get; set; }
 
     /// <summary>
     /// Simulator for Texture Increment.
@@ -193,11 +203,17 @@ public class SubModelDefinitions
 
     #region Rut and IRI Reduction (not reset!) after PA Maintenance, based on Extent
 
+
+    public LinearRegressionModel RutReductionAfterPaMaintenanceModel { get; set; }
+
+    public LinearRegressionModel IRIReductionAfterPaMaintenanceModel { get; set; }
+
+
     /// <summary>
     /// Simulator for the reduction in Rut Depth (not reset value, but reduction in the current value) after PA maintenance 
     /// (excluding pothole filling), based on the extent of maintenance. 
     /// </summary>
-    public DistributionSimulator RutReductionAfterPaMaintenanceSimulator { get; set; }
+    //public DistributionSimulator RutReductionAfterPaMaintenanceSimulator { get; set; }
 
     /// <summary>
     /// Simulator for the reduction in IRI (not reset value, but reduction in the current value) after PA maintenance 

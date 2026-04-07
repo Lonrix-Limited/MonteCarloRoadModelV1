@@ -25,6 +25,11 @@ public class Resetter
         // if treatment is null, return segment without changes
         if (treatment == null) return segment;
 
+        if (segment.ElementIndex == 22991)
+        {
+            int debug = 0; // Debugging breakpoint
+        }
+
         bool isRehabTreatment = treatment.TreatmentName.ToLower().Contains("rehab");
         string treatmentTypeCode = isRehabTreatment ? "rehab" : "resurf";
 
@@ -68,11 +73,7 @@ public class Resetter
         segment.IRIMeanObserved = segment.IRIMeanLatent + residual;
         // No need to reset episode separately for IRI as it is the same as Rut episode
 
-        if (segment.ElementIndex == 25229)
-        {
-            int debug = 0; // Debugging breakpoint
-        }
-
+        
         // Texture Depth               
         newValue = GetTextureDepthResetValue(segment, _domainModel.SubModels, treatmentTypeCode, _frameworkModel.Random); //Reset value.
         segment.TextureIncrement = Incrementer.GetTextureIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random); //Get new increment for new eposode.
@@ -229,6 +230,11 @@ public class Resetter
     public static double GetIRIResetValue(RoadSegmentMC segment, SubModelDefinitions subModels, string treatmentTypeCode, Random random)
     {
         var inputParameters = GetInputParametersForSegment(segment);
+
+        if (segment.ElementIndex == 22991)
+        {
+            int debug = 0;
+        }
 
         if (segment.SurfaceClass == "cs" || segment.SurfaceClass == "slurry")
         {

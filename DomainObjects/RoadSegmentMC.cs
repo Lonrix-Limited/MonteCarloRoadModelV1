@@ -1,4 +1,4 @@
-﻿using JCass_Functions.Engineering;
+﻿
 using JCass_ModelCore.Models;
 
 namespace MonteCarloRoadModelV1.DomainObjects;
@@ -97,7 +97,26 @@ public class RoadSegmentMC
         set => _surfaceClass = value?.ToLower();
     }
 
-    
+    public string SurfaceClassForRules
+    {
+        get
+        {
+            // Map surface classes to the ones used in the rules. This is needed because some of the 
+            // surface classes in the input data are not used in the rules, and need to be mapped to the
+            // ones assigned in the Model Development  (Casper) pipeline
+
+            // 'concrete' should be 'other' to match the rules (even though there is a 'conc' in some rules,
+            // user 'other' because some model building sets did not contain a 'conc' class. Thus, to be consistent, we map 'concrete' to 'other' for all rules)
+            if (this.SurfaceClass == "concrete") return "other";
+            
+            // 'unknown' should be 'other' to match the rules
+             if (this.SurfaceClass == "unknown") return "other";
+                        
+            return this.SurfaceClass;
+        }
+    }
+
+
     /// <summary>
     /// Flag indicating if the surface is a chip seal. This is calculated based on the SurfaceClass property.
     /// </summary>

@@ -62,15 +62,20 @@ public class RoutineMaintenanceModeller
     /// <param name="maintenanceExtent"></param>
     /// <returns></returns>
     public double GetRutReductionDueToMaintenance(RoadSegmentMC segment)
-    {
-        Dictionary<string, double> inputParameters = new Dictionary<string, double>
+    {        
+        Dictionary<string, object> inputParameters = new Dictionary<string, object>
         {
             { "maint_extent", segment.MaintenancePavement },
             { "rut_mean_pre", segment.RutMeanLatent },
-            { "iri_mean_pre", segment.IRIMeanLatent }
+            { "iri_mean_pre", segment.IRIMeanLatent },
+            { "surf_age", segment.SurfaceAge },
+            { "surf_class", segment.SurfaceClassForRules },
+            { "surf_count", segment.SurfaceNumberOfLayers }
         };
-        //return _domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator.GetSimulatedValue(inputParameters, _frameworkModel.Random);
-        return _domainModel.SubModels.RutReductionAfterPaMaintenanceModel.PredictWithRandomError(inputParameters, segment.RutMeanLatent);
+        double reducRaw = _domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator.GetSimulatedValue(inputParameters, _frameworkModel.Random);
+        reducRaw = Math.Max(-2, reducRaw);
+        reducRaw = Math.Min(5, reducRaw);
+        return 0.0; // reducRaw;        
     }
 
     /// <summary>
@@ -79,15 +84,21 @@ public class RoutineMaintenanceModeller
     /// <param name="maintenanceExtent"></param>
     /// <returns></returns>
     public double GetIRIReductionDueToMaintenance(RoadSegmentMC segment)
-    {
-        Dictionary<string, double> inputParameters = new Dictionary<string, double>
+    {        
+        Dictionary<string, object> inputParameters = new Dictionary<string, object>
         {
             { "maint_extent", segment.MaintenancePavement },
             { "rut_mean_pre", segment.RutMeanLatent },
             { "iri_mean_pre", segment.IRIMeanLatent },
-            { "surf_age", segment.SurfaceAge },            
+            { "surf_age", segment.SurfaceAge },                        
+            { "surf_count", segment.SurfaceNumberOfLayers },
+            { "surf_class", segment.SurfaceClassForRules }
         };
-        return 0.0; // _domainModel.SubModels.IRIReductionAfterPaMaintenanceModel.PredictWithRandomError(inputParameters, segment.IRIMeanLatent);
+
+        double reducRaw = _domainModel.SubModels.IRIReductionAfterPaMaintenanceSimulator.GetSimulatedValue(inputParameters, _frameworkModel.Random);
+        reducRaw = Math.Max(-0.2, reducRaw);
+        reducRaw = Math.Min(0.7, reducRaw);
+        return 0.0; // reducRaw;  
     }
 
     /// <summary>
@@ -106,7 +117,7 @@ public class RoutineMaintenanceModeller
             { "pre_potfill_mtc_extent", segment.MaintenancePotfill },
             { "pre_all_mtc_extent", segment.MaintenancePavement },
             { "log(adt)", Math.Log(segment.AverageDailyTraffic) },
-            { "heavy_perc", segment.HeavyVehiclePercentage },
+            { "heavy_perc", segment.HeavyVehiclePercentage }            
         };
 
         if (segment.SurfaceClass == "cs" || segment.SurfaceClass == "slurry")
@@ -182,7 +193,7 @@ public class RoutineMaintenanceModeller
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
     private double GetMaintenanceExtentPA(RoadSegmentMC segment)
-    {
+    {        
         Dictionary<string, object> inputParameters = new Dictionary<string, object>
         {
             { "rut_mean_pre", segment.RutMeanLatent },
@@ -193,29 +204,11 @@ public class RoutineMaintenanceModeller
             { "adt", segment.AverageDailyTraffic },
             { "heavy_perc", segment.HeavyVehiclePercentage },
             { "surf_thick", segment.SurfaceThickness },
+            { "surf_class", segment.SurfaceClassForRules }
         };
 
-        if (segment.SurfaceClass == "cs" || segment.SurfaceClass == "slurry")
-        {
-            return _domainModel.SubModels.MaintenanceExtentPAForCSandSlurry.GetSimulatedValue(inputParameters, _frameworkModel.Random);
-        }
-        else if (segment.SurfaceClass == "ac" || segment.SurfaceClass == "ogpa")
-        {
-            return _domainModel.SubModels.MaintenanceExtentPAForACandOgpa.GetSimulatedValue(inputParameters, _frameworkModel.Random);
-        }
-        if (segment.SurfaceClass == "concrete")
-        {
-            return 0.0;   //Not enough data. TODO: explore potfill model for concrete
-        }
-        if (segment.SurfaceClass == "unknown")
-        {
-            //For unknown, return value for CS and Slurry as a best-guess
-            return _domainModel.SubModels.MaintenanceExtentPAForCSandSlurry.GetSimulatedValue(inputParameters, _frameworkModel.Random);
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unknown surface class: {segment.SurfaceClass}");
-        }
+        return _domainModel.SubModels.MaintenanceExtentPA.GetSimulatedValue(inputParameters, _frameworkModel.Random);
+
     }
 
 
@@ -237,29 +230,10 @@ public class RoutineMaintenanceModeller
             { "adt", segment.AverageDailyTraffic },
             { "heavy_perc", segment.HeavyVehiclePercentage },
             { "surf_thick", segment.SurfaceThickness },
+            { "surf_class", segment.SurfaceClassForRules }
         };
 
-        if (segment.SurfaceClass == "cs" || segment.SurfaceClass == "slurry")
-        {
-            return _domainModel.SubModels.MaintenanceExtentPotfillCSandSlurry.GetSimulatedValue(inputParameters, _frameworkModel.Random);
-        }
-        else if (segment.SurfaceClass == "ac" || segment.SurfaceClass == "ogpa")
-        {
-            return _domainModel.SubModels.MaintenanceExtentPotfillACandOgpa.GetSimulatedValue(inputParameters, _frameworkModel.Random);
-        }
-        if (segment.SurfaceClass == "concrete")
-        {
-            return 0.0;   //Not enough data. TODO: explore potfill model for concrete
-        }
-        if (segment.SurfaceClass == "unknown")
-        {
-            //For unknown, return value for CS and Slurry as a best-guess
-            return _domainModel.SubModels.MaintenanceExtentPotfillCSandSlurry.GetSimulatedValue(inputParameters, _frameworkModel.Random);
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unknown surface class: {segment.SurfaceClass}");
-        }
+        return _domainModel.SubModels.MaintenanceExtentPotfill.GetSimulatedValue(inputParameters, _frameworkModel.Random);        
     }
 
 }

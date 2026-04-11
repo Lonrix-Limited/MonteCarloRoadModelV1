@@ -159,54 +159,14 @@ public class Resetter
     {
         
         var inputParameters = GetInputParametersForSegment(segment);
-        
-        if (segment.SurfaceClass == "cs" || segment.SurfaceClass == "slurry")
-        {
-            return GetRutResetForCSandSlurry(inputParameters, subModels, treatmentTypeCode, random);
-        }
-        else if (segment.SurfaceClass == "ac" || segment.SurfaceClass == "ogpa")
-        {
-            return GetRutResetForACandOGPA(inputParameters, subModels, treatmentTypeCode, random);
-        }
-        if (segment.SurfaceClass == "concrete")
-        {
-            return 1.0;   //Not enough data.
-        }
-        if (segment.SurfaceClass == "unknown")
-        {
-            return GetRutResetForCSandSlurry(inputParameters, subModels, treatmentTypeCode, random);  //Default to CS model for unknown surface class.
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unknown surface class: {segment.SurfaceClass}");
-        }
-    }
 
-    private static double GetRutResetForCSandSlurry(Dictionary<string, object> inputParameters, SubModelDefinitions subModels, string treatmentTypeCode, Random random)
-    {
         if (treatmentTypeCode == "resurf")
         {
-            return subModels.RutResetSimulatorCSResurf.GetSimulatedValue(inputParameters, random);
+            return subModels.RutResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
         }
         else if (treatmentTypeCode == "rehab")
         {
-            return subModels.RutResetSimulatorCSRehab.GetSimulatedValue(inputParameters, random);
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unknown treatment type code: {treatmentTypeCode}");
-        }
-    }
-
-    private static double GetRutResetForACandOGPA(Dictionary<string, object> inputParameters, SubModelDefinitions subModels, string treatmentTypeCode, Random random)
-    {
-        if (treatmentTypeCode == "resurf")
-        {
-            return subModels.RutResetSimulatorACResurf.GetSimulatedValue(inputParameters, random);
-        }
-        else if (treatmentTypeCode == "rehab")
-        {
-            return subModels.RutResetSimulatorACRehab.GetSimulatedValue(inputParameters, random);
+            return subModels.RutResetSimulatorRehab.GetSimulatedValue(inputParameters, random);
         }
         else
         {
@@ -231,64 +191,20 @@ public class Resetter
     {
         var inputParameters = GetInputParametersForSegment(segment);
 
-        if (segment.ElementIndex == 22991)
-        {
-            int debug = 0;
-        }
-
-        if (segment.SurfaceClass == "cs" || segment.SurfaceClass == "slurry")
-        {
-            return GetIRIResetForCSandSlurry(inputParameters, subModels, treatmentTypeCode, random);
-        }
-        else if (segment.SurfaceClass == "ac" || segment.SurfaceClass == "ogpa")
-        {
-            return GetIRIResetForACandOGPA(inputParameters, subModels, treatmentTypeCode, random);
-        }
-        if (segment.SurfaceClass == "concrete")
-        {
-            return 1.5;   //Not enough data.
-        }
-        if (segment.SurfaceClass == "unknown")
-        {
-            return GetIRIResetForCSandSlurry(inputParameters, subModels, treatmentTypeCode, random);  //Default to CS model for unknown surface class.
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unknown surface class: {segment.SurfaceClass}");
-        }
-    }
-
-    private static double GetIRIResetForCSandSlurry(Dictionary<string, object> inputParameters, SubModelDefinitions subModels, string treatmentTypeCode, Random random)
-    {
         if (treatmentTypeCode == "resurf")
         {
-            return subModels.IRIResetSimulatorCSResurf.GetSimulatedValue(inputParameters, random);
+            return subModels.IRIResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
         }
         else if (treatmentTypeCode == "rehab")
         {
-            return subModels.IRIResetSimulatorCSRehab.GetSimulatedValue(inputParameters, random);
+            return subModels.IRIResetSimulatorRehab.GetSimulatedValue(inputParameters, random);
         }
         else
         {
             throw new InvalidOperationException($"Unknown treatment type code: {treatmentTypeCode}");
         }
     }
-
-    private static double GetIRIResetForACandOGPA(Dictionary<string, object> inputParameters, SubModelDefinitions subModels, string treatmentTypeCode, Random random)
-    {
-        if (treatmentTypeCode == "resurf")
-        {
-            return subModels.IRIResetSimulatorACResurf.GetSimulatedValue(inputParameters, random);
-        }
-        else if (treatmentTypeCode == "rehab")
-        {
-            return subModels.IRIResetSimulatorACRehab.GetSimulatedValue(inputParameters, random);
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unknown treatment type code: {treatmentTypeCode}");
-        }
-    }
+        
 
     #endregion
 
@@ -306,67 +222,15 @@ public class Resetter
     public static double GetTextureDepthResetValue(RoadSegmentMC segment, SubModelDefinitions subModels, string treatmentTypeCode, Random random)
     {
         var inputParameters = GetInputParametersForSegment(segment);
-
-        if (segment.SurfaceClass == "cs" || segment.SurfaceClass == "slurry")
-        {
-            return GetTextureDepthResetForCSandSlurry(inputParameters, subModels, treatmentTypeCode, random);
-        }
-        else if (segment.SurfaceClass == "ac" || segment.SurfaceClass == "ogpa")
-        {
-            return GetTextureDepthResetForACandOGPA(inputParameters, subModels, treatmentTypeCode, random);
-        }
-        if (segment.SurfaceClass == "concrete")
-        {
-            return 1.5;   //Not enough data.
-        }
-        if (segment.SurfaceClass == "unknown")
-        {
-            return GetTextureDepthResetForCSandSlurry(inputParameters, subModels, treatmentTypeCode, random);  //Default to CS model for unknown surface class.
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unknown surface class: {segment.SurfaceClass}");
-        }
+        return subModels.TextureResetSimulator.GetSimulatedValue(inputParameters, random); //Texture reset does not vary by surface class, so we can use the same model for all segments regardless of surface class.        
     }
-
-    private static double GetTextureDepthResetForCSandSlurry(Dictionary<string, object> inputParameters, SubModelDefinitions subModels, string treatmentTypeCode, Random random)
-    {
-        if (treatmentTypeCode == "resurf")
-        {
-            return subModels.TextureResetSimulatorCSResurf.GetSimulatedValue(inputParameters, random);
-        }
-        else if (treatmentTypeCode == "rehab")
-        {
-            return subModels.TextureResetSimulatorCSRehab.GetSimulatedValue(inputParameters, random);
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unknown treatment type code: {treatmentTypeCode}");
-        }
-    }
-
-    private static double GetTextureDepthResetForACandOGPA(Dictionary<string, object> inputParameters, SubModelDefinitions subModels, string treatmentTypeCode, Random random)
-    {
-        if (treatmentTypeCode == "resurf")
-        {
-            return subModels.TextureResetSimulatorACResurf.GetSimulatedValue(inputParameters, random);
-        }
-        else if (treatmentTypeCode == "rehab")
-        {
-            return subModels.TextureResetSimulatorACRehab.GetSimulatedValue(inputParameters, random);
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unknown treatment type code: {treatmentTypeCode}");
-        }
-    }
-
+       
     #endregion
 
     #region Helper Methods
 
     private static Dictionary<string, object> GetInputParametersForSegment(RoadSegmentMC segment)
-    {
+    {        
         return new Dictionary<string, object>
         {
             { "rut_mean_pre", segment.RutMeanLatent },
@@ -376,6 +240,8 @@ public class Resetter
             { "adt", segment.AverageDailyTraffic },
             { "heavy_perc", segment.HeavyVehiclePercentage },
             { "surf_thick", segment.SurfaceThickness },
+            { "surf_class", segment.SurfaceClassForRules },
+            { "surf_count", segment.SurfaceNumberOfLayers }
         };
     }
 

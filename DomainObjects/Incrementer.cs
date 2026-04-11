@@ -96,7 +96,7 @@ public class Incrementer
     private void IncrementRut(RoadSegmentMC segment)
     {
         if (segment.MaintenancePavement > 0)
-        {
+        {            
             double reductionDueToMaintenance = _domainModel.MaintenanceModel.GetRutReductionDueToMaintenance(segment);
             segment.RutMeanLatent = Math.Max(1.5, segment.RutMeanLatent - reductionDueToMaintenance);
             segment.RutMeanObserved = Math.Max(1.5, segment.RutMeanObserved - reductionDueToMaintenance);
@@ -120,7 +120,7 @@ public class Incrementer
     /// <param name="segment"></param>
     private void IncrementIRI(RoadSegmentMC segment)
     {        
-        if (segment.MaintenancePavement > 10)
+        if (segment.MaintenancePavement > 0)
         {
             double reductionDueToMaintenance = _domainModel.MaintenanceModel.GetIRIReductionDueToMaintenance(segment);
             segment.IRIMeanLatent = Math.Max(0.5, segment.IRIMeanLatent - reductionDueToMaintenance);
@@ -148,9 +148,11 @@ public class Incrementer
         }
         else
         {
+            double rutCalibrationFactor = 1.0;
+
             // Need to draw a new increment for rut and IRI, and reset the episode length
-            segment.RutIncrement = GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
-            segment.IRIIncrement = GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+            segment.RutIncrement = rutCalibrationFactor * GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+            segment.IRIIncrement = Math.Min(0.3, GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random));
 
             //Reset the episode length to 1
             segment.RutAndIRIIncrementEpisodeLength = 1;
@@ -182,44 +184,12 @@ public class Incrementer
         //return random.NextDouble() * 0.5; // Temporary random increment for testing purposes, replace with model prediction when available
 
         return subModels.RutIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);
-
-
-        //Dictionary<string, double> inputParameters = new Dictionary<string, double>
-        //{
-        //    { "log(adt)", Math.Log(segment.AverageDailyTraffic) },            
-        //    { "iri_mean", segment.IRIMeanLatent },
-        //    { "rut_mean", segment.RutMeanLatent },            
-        //};
-        //double increm = subModels.RutIncrementModel.PredictWithRandomError(inputParameters, segment.IRIMeanLatent);
-        //if (increm < 0)
-        //{
-        //    // Generate random value between 0 and 0.001
-        //    increm = random.NextDouble() * 0.01;
-        //}
-        //return increm;
     }
 
     public static double GetIRIIncrementForEpisode(RoadSegmentMC segment, SubModelDefinitions subModels, Random random)
     {
         //return random.NextDouble() * 0.1; // Temporary random increment for testing purposes, replace with model prediction when available
-
-        return subModels.IRIIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);
-
-        //Dictionary<string, double> inputParameters = new Dictionary<string, double>
-        //{
-        //    { "log(adt)", Math.Log(segment.AverageDailyTraffic) },
-        //    { "heavy_perc", segment.HeavyVehiclePercentage },
-        //    { "iri_mean", segment.IRIMeanLatent },
-        //    { "rut_mean", segment.RutMeanLatent },
-        //    { "surf_age", segment.SurfaceAge },
-        //};
-        //double increm = subModels.IRIIncrementModel.PredictWithRandomError(inputParameters, segment.IRIMeanLatent);
-        //if (increm < 0)
-        //{
-        //    // Generate random value between 0 and 0.001
-        //    increm = random.NextDouble() * 0.001;
-        //}
-        //return increm;
+        return subModels.IRIIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);        
     }
 
     public static double GetTextureIncrementForEpisode(RoadSegmentMC segment, SubModelDefinitions subModels, Random random)
@@ -229,6 +199,7 @@ public class Incrementer
 
     private static Dictionary<string, object> GetSimulatorInputValues(RoadSegmentMC segment)
     {
+        //Note: cohort rules expect surface class 'concrete' to be 'conc'. So we need to convert it here before passing to the simulator
         Dictionary<string, object> inputParameters = new Dictionary<string, object>
         {
             { "rut_mean", segment.RutMeanLatent },
@@ -239,7 +210,9 @@ public class Incrementer
             { "adt", segment.AverageDailyTraffic },
             { "heavy_perc", segment.HeavyVehiclePercentage },
             { "surf_thick", segment.SurfaceThickness },
-            {"rainfall", segment.RainfallMM }
+            {"rainfall", segment.RainfallMM },
+            { "surf_class", segment.SurfaceClassForRules },
+            { "surf_count", segment.SurfaceNumberOfLayers }
         };
         return inputParameters;
     }

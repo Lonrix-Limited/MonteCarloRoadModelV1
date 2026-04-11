@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DocumentFormat.OpenXml.EMMA;
 using JCass_Core.Statistics;
-using JCass_Functions.Engineering;
 using JCass_ModelCore.MonteCarlo;
 
 namespace MonteCarloRoadModelV1.DomainObjects;
@@ -58,19 +56,19 @@ public class SubModelDefinitions
     /// Piecewise Linear function to calculate the Standard Deviation of the Rut Increment residual as a function of the current rut depth.
     /// Function generally gives higher SD values for higher rut depths, to reflect the higher variability in rut increment as rut depth increases. 
     /// </summary>
-    public PieceWiseLinearModelGeneric RutInrementResidualSDFunction { get; set; }
+    public PieceWiseLinearModel RutInrementResidualSDFunction { get; set; }
 
 
     /// <summary>
     /// Piecewise Linear function to calculate the Standard Deviation of the IRI Increment residual as a function of the current IRI value.
     /// </summary>
-    public PieceWiseLinearModelGeneric IRIInrementResidualSDFunction { get; set; }
+    public PieceWiseLinearModel IRIInrementResidualSDFunction { get; set; }
 
 
     /// <summary>
     /// Piecewise Linear function to calculate the Standard Deviation of the Texture Increment residual as a function of the current texture value.
     /// </summary>
-    public PieceWiseLinearModelGeneric TextureInrementResidualSDFunction { get; set; }
+    public PieceWiseLinearModel TextureInrementResidualSDFunction { get; set; }
 
     #endregion
 
@@ -109,111 +107,56 @@ public class SubModelDefinitions
 
 
     /// <summary>
-    /// Simulator for assigning a random Extent of PA maintenance (excluding Pothole filling) when it is triggered, specifically
-    /// for Asphalt and OGPA
+    /// Simulator for assigning a random Extent of PA maintenance (excluding Pothole filling) when it is triggered
     /// </summary>
-    public DistributionSimulator MaintenanceExtentPAForACandOgpa { get; set; }
-
-
+    public DistributionSimulator MaintenanceExtentPA { get; set; }
+    
     /// <summary>
-    /// Simulator for assigning a random Extent of PA maintenance (excluding Pothole filling) when it is triggered, specifically
-    /// for Chipseals and Slurry Seals
+    /// Simulator for assigning a random Extent of Pothole Filling maintenance when it is triggered
     /// </summary>
-    public DistributionSimulator MaintenanceExtentPAForCSandSlurry { get; set; }
+    public DistributionSimulator MaintenanceExtentPotfill { get; set; }
 
-
-    /// <summary>
-    /// Simulator for assigning a random Extent of Pothole Filling maintenance when it is triggered, specifically
-    /// for Asphalt and OGPA. 
-    /// </summary>
-    public DistributionSimulator MaintenanceExtentPotfillACandOgpa { get; set; }
-
-    /// <summary>
-    /// Simulator for assigning a random Extent of Pothole Filling maintenance when it is triggered, specifically
-    /// for Chipseals and Slurries. 
-    /// </summary>
-    public DistributionSimulator MaintenanceExtentPotfillCSandSlurry { get; set; }
-
+    
     #endregion
 
     #region Reset Simulators
+    
+    /// <summary>
+    /// Simulator for Rut Depth Reset (value after treatment) for Resurfacings
+    /// </summary>
+    public DistributionSimulator RutResetSimulatorResurf { get; set; }
 
     /// <summary>
-    /// Simulator for Rut Depth Reset (value after treatment) for Chipseal and Slurry Seal Resurfacings
+    /// Simulator for Rut Depth Reset (value after treatment) for Rehabilitations
     /// </summary>
-    public DistributionSimulator RutResetSimulatorCSResurf { get; set; }
+    public DistributionSimulator RutResetSimulatorRehab { get; set; }
 
     /// <summary>
-    /// Simulator for Rut Depth Reset (value after treatment) for Chipseal and Slurry Seal Rehabilitations
+    /// Simulator for IRI Reset (value after treatment) for Resurfacings
     /// </summary>
-    public DistributionSimulator RutResetSimulatorCSRehab { get; set; }
-
+    public DistributionSimulator IRIResetSimulatorResurf { get; set; }
 
     /// <summary>
-    /// Simulator for Rut Depth Reset (value after treatment) for Asphalt and OGPA Resurfacings
+    /// Simulator for IRI Reset (value after treatment) for Rehabilitations
     /// </summary>
-    public DistributionSimulator RutResetSimulatorACResurf { get; set; }
+    public DistributionSimulator IRIResetSimulatorRehab { get; set; }
 
+    
     /// <summary>
-    /// Simulator for Rut Depth Reset (value after treatment) for Asphalt and OGPA Rehabilitations
+    /// Simulator for Texture Depth Reset (value after treatment) for ALL Treatments and Surfacing types.
     /// </summary>
-    public DistributionSimulator RutResetSimulatorACRehab { get; set; }
+    public DistributionSimulator TextureResetSimulator { get; set; }
 
-    /// <summary>
-    /// Simulator for IRI Reset (value after treatment) for Chipseal and Slurry Seal Resurfacings
-    /// </summary>
-    public DistributionSimulator IRIResetSimulatorCSResurf { get; set; }
-
-    /// <summary>
-    /// Simulator for IRI Reset (value after treatment) for Chipseal and Slurry Seal Rehabilitations
-    /// </summary>
-    public DistributionSimulator IRIResetSimulatorCSRehab { get; set; }
-
-    /// <summary>
-    /// Simulator for IRI Reset (value after treatment) for Asphalt and OGPA Resurfacings
-    /// </summary>
-    public DistributionSimulator IRIResetSimulatorACResurf { get; set; }
-
-    /// <summary>
-    /// Simulator for IRI Reset (value after treatment) for Asphalt and OGPA Rehabilitations
-    /// </summary>
-    public DistributionSimulator IRIResetSimulatorACRehab { get; set; }
-
-
-    /// <summary>
-    /// Simulator for Texture Depth Reset (value after treatment) for Chipseal and Slurry Seal Resurfacings
-    /// </summary>
-    public DistributionSimulator TextureResetSimulatorCSResurf { get; set; }
-
-    /// <summary>
-    /// Simulator for Texture Depth Reset (value after treatment) for Chipseal and Slurry Seal Rehabilitations
-    /// </summary>
-    public DistributionSimulator TextureResetSimulatorCSRehab { get; set; }
-
-    /// <summary>
-    /// Simulator for Texture Depth Reset (value after treatment) for Asphalt and OGPA Resurfacings
-    /// </summary>
-    public DistributionSimulator TextureResetSimulatorACResurf { get; set; }
-    /// <summary>
-    /// Simulator for Texture Depth Reset (value after treatment) for Asphalt and OGPA Rehabilitations
-    /// </summary>
-    public DistributionSimulator TextureResetSimulatorACRehab { get; set; }
-
+    
     #endregion
 
     #region Rut and IRI Reduction (not reset!) after PA Maintenance, based on Extent
-
-
-    public LinearRegressionModel RutReductionAfterPaMaintenanceModel { get; set; }
-
-    public LinearRegressionModel IRIReductionAfterPaMaintenanceModel { get; set; }
-
 
     /// <summary>
     /// Simulator for the reduction in Rut Depth (not reset value, but reduction in the current value) after PA maintenance 
     /// (excluding pothole filling), based on the extent of maintenance. 
     /// </summary>
-    //public DistributionSimulator RutReductionAfterPaMaintenanceSimulator { get; set; }
+    public DistributionSimulator RutReductionAfterPaMaintenanceSimulator { get; set; }
 
     /// <summary>
     /// Simulator for the reduction in IRI (not reset value, but reduction in the current value) after PA maintenance 

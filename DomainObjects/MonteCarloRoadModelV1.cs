@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using JCass_Core.Statistics;
 using JCass_Data.Objects;
 using JCass_Data.Utils;
-using JCass_Functions.Engineering;
 using JCass_ModelCore.DomainModels;
 using JCass_ModelCore.MonteCarlo;
 using JCass_ModelCore.Treatments;

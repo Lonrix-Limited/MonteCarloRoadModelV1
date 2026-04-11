@@ -7,9 +7,7 @@ using DocumentFormat.OpenXml.Packaging;
 using JCass_Core.Statistics;
 using JCass_Data.Objects;
 using JCass_Data.Utils;
-using JCass_Functions.Engineering;
 using JCass_ModelCore.MonteCarlo;
-using MonteCarloRoadModelV1.DomainObjects;
 
 namespace MonteCarloRoadModelV1.Utilities;
 
@@ -18,8 +16,8 @@ public static class SetupUtilities
 
     /// <summary>
     /// Helper function to setup the increment residual SD functions for the MonteCarloRoadModelV1 domain model. This reads in the setup codes from a CSV file and 
-    /// creates the PieceWiseLinearModelGeneric instances for each of the three parameters (rut, IRI, texture). The setup codes in the
-    /// CSV file should be in the format expected by the PieceWiseLinearModelGeneric constructor. The created models are then assigned to the domain model instance.
+    /// creates the PieceWiseLinearModel instances for each of the three parameters (rut, IRI, texture). The setup codes in the
+    /// CSV file should be in the format expected by the PieceWiseLinearModel constructor. The created models are then assigned to the domain model instance.
     /// </summary>
     /// <param name="domainModel">Monte Carlo DomainModel</param>
     /// <param name="workFolder">workfolder to find the path to setup CSV files</param>
@@ -56,60 +54,40 @@ public static class SetupUtilities
     {
         //------------------------------------  Set up distribution simulators for increments------------------------------------
 
-        string distributionSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/increms_cohort_rule_plm_setup_for_cassandra.csv");
-        if (!System.IO.File.Exists(distributionSetupFile)) throw new Exception($"Distribution setup file for Increments not found at: {System.IO.Path.GetFileName(distributionSetupFile)}");
+        string distributionSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/cohorts_b_increments_5yrs_rut_mean_rate.csv");       
+        domainModel.SubModels.RutIncrementSimulator = SetupUtilities.GetDistributionSimulator("rut_inc", distributionSetupFile, "Rut Increment");
+
+        distributionSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/cohorts_b_increments_5yrs_iri_mean_rate.csv");
+        domainModel.SubModels.IRIIncrementSimulator = SetupUtilities.GetDistributionSimulator("iri_inc", distributionSetupFile, "IRI Increment");
+
+        distributionSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/cohorts_b_increments_3yrs_text_mean_rate.csv");
+        domainModel.SubModels.TextureIncrementSimulator = SetupUtilities.GetDistributionSimulator("text_inc", distributionSetupFile, "Texture Increment");
         
-        jcDataSet allSetupData = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
-
-        domainModel.SubModels.RutIncrementSimulator = SetupUtilities.GetDistributionSimulator("rut_inc", allSetupData);
-        domainModel.SubModels.IRIIncrementSimulator = SetupUtilities.GetDistributionSimulator("iri_inc", allSetupData);
-        domainModel.SubModels.TextureIncrementSimulator = SetupUtilities.GetDistributionSimulator("text_not_ac_inc", allSetupData);
-
-        //string incremModelSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/increm_iri_model.csv");
-        //if (!System.IO.File.Exists(incremModelSetupFile)) throw new Exception($"IRI Increment model setup data not found at: {System.IO.Path.GetFileName(incremModelSetupFile)}");
-
-        //allSetupData =  CSVHelper.ReadDataFromCsvFile(incremModelSetupFile);
-        //(var coefficients, var residSDPlmSetup) = GetLinearRegressionModelCoefficients(allSetupData);
-        //domainModel.SubModels.IRIIncrementModel = new LinearRegressionModel(coefficients, residSDPlmSetup, false, random);
-
-        //incremModelSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/increm_rut_model.csv");
-        //if (!System.IO.File.Exists(incremModelSetupFile)) throw new Exception($"Rut Increment model setup data not found at: {System.IO.Path.GetFileName(incremModelSetupFile)}");
-
-        //allSetupData = CSVHelper.ReadDataFromCsvFile(incremModelSetupFile);
-        //(coefficients, residSDPlmSetup) = GetLinearRegressionModelCoefficients(allSetupData);
-        //domainModel.SubModels.RutIncrementModel = new LinearRegressionModel(coefficients, residSDPlmSetup, false, random);
 
         //------------------------------------  Set up distribution simulators for Maintenance Extent (PA and Potfill) ------------------------------------
 
         // First all PA excluding maintenance
-        distributionSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/maint_pa_extent_cohort_rule_plm_setup_for_cassandra.csv");
-        if (!System.IO.File.Exists(distributionSetupFile)) throw new Exception($"Distribution setup file for Maintenance PA not found at: {System.IO.Path.GetFileName(distributionSetupFile)}");
-
-        allSetupData = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
-        domainModel.SubModels.MaintenanceExtentPAForACandOgpa = SetupUtilities.GetDistributionSimulator("post_all_mtc_extent_ac_ogpa", allSetupData);
-        domainModel.SubModels.MaintenanceExtentPAForCSandSlurry = SetupUtilities.GetDistributionSimulator("post_all_mtc_extent_cs_slurry", allSetupData);
-
+        distributionSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/cohorts_d_maint_model_data_post_potfill_mtc_extent.csv");               
+        domainModel.SubModels.MaintenanceExtentPA = SetupUtilities.GetDistributionSimulator("post_all_mtc_extent", distributionSetupFile, "Maintenance Extent PA");
+        
         // Then potfill extent
-        distributionSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/maint_poth_extent_cohort_rule_plm_setup_for_cassandra.csv");
-        if (!System.IO.File.Exists(distributionSetupFile)) throw new Exception($"Distribution setup file for Maintenance Potfill not found at: {System.IO.Path.GetFileName(distributionSetupFile)}");
-
-        allSetupData = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
-        domainModel.SubModels.MaintenanceExtentPotfillACandOgpa = SetupUtilities.GetDistributionSimulator("post_potfill_mtc_extent_ac_ogpa", allSetupData);
-        domainModel.SubModels.MaintenanceExtentPotfillCSandSlurry = SetupUtilities.GetDistributionSimulator("post_potfill_mtc_extent_cs_slurry", allSetupData);
-
+        distributionSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/cohorts_d_maint_model_data_post_potfill_mtc_extent.csv");        
+        domainModel.SubModels.MaintenanceExtentPotfill = SetupUtilities.GetDistributionSimulator("post_potfill_mtc_extent_ac_ogpa", distributionSetupFile, "Maintenance Extent Potfill");        
     }
 
-    public static PieceWiseLinearModelGeneric GetPieceWiseLinearModel(string parameterName, jcDataSet allSetups)
+    public static PieceWiseLinearModel GetPieceWiseLinearModel(string parameterName, jcDataSet allSetups)
     {
         Dictionary<string, object> row = allSetups.Row(parameterName);
         string pwlSetupString = row["plm_setup_code"].ToString();
-        PieceWiseLinearModelGeneric model = new PieceWiseLinearModelGeneric(pwlSetupString, false); //Do not extrapolate.
+        PieceWiseLinearModel model = new PieceWiseLinearModel(pwlSetupString, false); //Do not extrapolate.
         return model;
     }
 
-    public static DistributionSimulator GetDistributionSimulator(string parameterName, jcDataSet allSetups)
+    public static DistributionSimulator GetDistributionSimulator(string parameterName, string setupFilePath, string paramLabelForError)
     {
-        jcDataSet setupDataForParameter = GetFilteredDataSet(parameterName, allSetups);
+        jcDataSet setupDataForParameter = CSVHelper.ReadDataFromCsvFile(setupFilePath);
+        if (!System.IO.File.Exists(setupFilePath)) throw new Exception($"Cohort Distribution setup file for {paramLabelForError} not found at: {System.IO.Path.GetFileName(setupFilePath)}");
+        jcDataSet setupData = CSVHelper.ReadDataFromCsvFile(setupFilePath);
         DistributionSimulator simulator = new DistributionSimulator(parameterName, setupDataForParameter);
         return simulator;
     }
@@ -150,60 +128,38 @@ public static class SetupUtilities
     {
         //------------------------------------  Set up distribution simulators for RESETS ------------------------------------
 
-        string distributionSetupFile = Path.Combine(workFolder, @"domain_model/reset_cohort_rule_plm_setup_for_cassandra.csv");
-        if (!File.Exists(distributionSetupFile)) throw new Exception($"Setup file for Reset Distributions not found at: {Path.GetFileName(distributionSetupFile)}");
-        jcDataSet d1 = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
+        // Texture Reset simulator
+        string distributionSetupFile = Path.Combine(workFolder, @"domain_model/cohorts_c_treatment_resets_text_mean_post.csv");
+        domainModel.SubModels.TextureResetSimulator = SetupUtilities.GetDistributionSimulator("text_mean_post", distributionSetupFile, "Texture Reset");
 
-        jcDataSet allSetupData = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
-        
-        // Rut Reset simulators
-        domainModel.SubModels.RutResetSimulatorACRehab = SetupUtilities.GetDistributionSimulator("rut_reset_ac_rehab", allSetupData);
-        domainModel.SubModels.RutResetSimulatorACResurf = SetupUtilities.GetDistributionSimulator("rut_reset_ac_resurf", allSetupData);
-        domainModel.SubModels.RutResetSimulatorCSRehab = SetupUtilities.GetDistributionSimulator("rut_reset_cs_rehab", allSetupData);
-        domainModel.SubModels.RutResetSimulatorCSResurf = SetupUtilities.GetDistributionSimulator("rut_reset_cs_resurf", allSetupData);
+        // IRI Reset simulator - Resurfacing
+        distributionSetupFile = Path.Combine(workFolder, @"domain_model/cohorts_c_resurf_resets_iri_mean_post.csv");
+        domainModel.SubModels.IRIResetSimulatorResurf = SetupUtilities.GetDistributionSimulator("iri_mean_post", distributionSetupFile, "IRI Reset - Resurfacing");
 
-        // IRI Reset simulators
-        domainModel.SubModels.IRIResetSimulatorACRehab = SetupUtilities.GetDistributionSimulator("iri_reset_ac_rehab", allSetupData);
-        domainModel.SubModels.IRIResetSimulatorACResurf = SetupUtilities.GetDistributionSimulator("iri_reset_ac_resurf", allSetupData);
-        domainModel.SubModels.IRIResetSimulatorCSRehab = SetupUtilities.GetDistributionSimulator("iri_reset_cs_rehab", allSetupData);
-        domainModel.SubModels.IRIResetSimulatorCSResurf = SetupUtilities.GetDistributionSimulator("iri_reset_cs_resurf", allSetupData);
+        // IRI Reset simulator - Rehabilitation
+        distributionSetupFile = Path.Combine(workFolder, @"domain_model/cohorts_c_rehab_resets_iri_mean_post.csv");
+        domainModel.SubModels.IRIResetSimulatorRehab = SetupUtilities.GetDistributionSimulator("iri_mean_post", distributionSetupFile, "IRI Reset - Rehabilitation");
 
-        // Texture Reset simulators
-        domainModel.SubModels.TextureResetSimulatorACRehab = SetupUtilities.GetDistributionSimulator("text_reset_ac_rehab", allSetupData);
-        domainModel.SubModels.TextureResetSimulatorACResurf = SetupUtilities.GetDistributionSimulator("text_reset_ac_resurf", allSetupData);
-        domainModel.SubModels.TextureResetSimulatorCSRehab = SetupUtilities.GetDistributionSimulator("text_reset_cs_rehab", allSetupData);
-        domainModel.SubModels.TextureResetSimulatorCSResurf = SetupUtilities.GetDistributionSimulator("text_reset_cs_resurf", allSetupData);
+        // Rut Reset simulator - Resurfacing
+        distributionSetupFile = Path.Combine(workFolder, @"domain_model/cohorts_c_resurf_resets_rut_mean_post.csv");
+        domainModel.SubModels.RutResetSimulatorResurf = SetupUtilities.GetDistributionSimulator("rut_mean_post", distributionSetupFile, "Rut Reset - Resurfacing");
+
+        // Rut Reset simulator - Rehabilitation
+        distributionSetupFile = Path.Combine(workFolder, @"domain_model/cohorts_c_rehab_resets_rut_mean_post.csv");
+        domainModel.SubModels.RutResetSimulatorRehab = SetupUtilities.GetDistributionSimulator("rut_mean_post", distributionSetupFile, "Rut Reset - Rehabilitation");
+
     }
 
     public static void SetupReductionDueToPaMaintenanceModels(DomainObjects.MonteCarloRoadModelV1 domainModel, string workFolder, Random random)
     {
+       
         //-----------------  Set up distribution simulators for REDUCTION in Rut and IRI after PA Maintenance ------------------------------------
 
-        //string distributionSetupFile = Path.Combine(workFolder, @"domain_model/reduction_after_maint_cohort_rule_plm_setup_for_cassandra.csv");
-        //if (!File.Exists(distributionSetupFile)) throw new Exception($"Setup file for Reduction Due to PA Maintenance Distributions not found at: {Path.GetFileName(distributionSetupFile)}");
-        
-        //jcDataSet allSetupData = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
+        string distributionSetupFile = Path.Combine(workFolder, @"domain_model\cohorts_maint_reduc_data_iri_reduction.csv");        
+        domainModel.SubModels.IRIReductionAfterPaMaintenanceSimulator = SetupUtilities.GetDistributionSimulator("iri_reduction", distributionSetupFile, "IRI Reduction after PA Maintenance");
 
-        // Rut Reduction after PA Maintenance simulator
-       // domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator = SetupUtilities.GetDistributionSimulator("rut_reduc_after_maint", allSetupData);
-
-        // IRI Reduction after PA Maintenance simulator
-        //domainModel.SubModels.IRIReductionAfterPaMaintenanceSimulator = SetupUtilities.GetDistributionSimulator("iri_reduc_after_maint", allSetupData);
-
-        //-----------------  Set up distribution simulators for REDUCTION in Rut and IRI after PA Maintenance ------------------------------------
-
-        string distributionSetupFile = Path.Combine(workFolder, @"domain_model/maint_rut_reduction_model.csv");
-        if (!File.Exists(distributionSetupFile)) throw new Exception($"Setup file for Regression Model for Rut Reduction Due to PA Maintenance not found at: {Path.GetFileName(distributionSetupFile)}");
-        
-        jcDataSet allSetupData = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
-        (var coefficients, var residSDPlmSetup) = GetLinearRegressionModelCoefficients(allSetupData);
-        domainModel.SubModels.RutReductionAfterPaMaintenanceModel = new LinearRegressionModel(coefficients,residSDPlmSetup, false, random);
-
-        distributionSetupFile = Path.Combine(workFolder, @"domain_model/maint_iri_reduction_model.csv");
-        if (!File.Exists(distributionSetupFile)) throw new Exception($"Setup file for Regression Model for IRI Reduction Due to PA Maintenance not found at: {Path.GetFileName(distributionSetupFile)}");
-        allSetupData = CSVHelper.ReadDataFromCsvFile(distributionSetupFile);
-        (coefficients, residSDPlmSetup) = GetLinearRegressionModelCoefficients(allSetupData);
-        domainModel.SubModels.IRIReductionAfterPaMaintenanceModel = new LinearRegressionModel(coefficients, residSDPlmSetup, false, random);
+        distributionSetupFile = Path.Combine(workFolder, @"domain_model\cohorts_maint_reduc_data_rut_reduction.csv");
+        domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator = SetupUtilities.GetDistributionSimulator("rut_reduction", distributionSetupFile, "Rut Reduction after PA Maintenance");
 
     }
 

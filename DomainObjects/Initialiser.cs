@@ -154,7 +154,7 @@ public class Initialiser
         bool hasBeenRehabilitated = segment.PavementAge < surveyAge;
         if (hasBeenRehabilitated)
         {
-            return Incrementer.GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+            return Incrementer.GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants);
         }
 
         double ruttingRaw = segment.RutMeanLatent;
@@ -163,7 +163,7 @@ public class Initialiser
         bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
         if (hasBeenResurfaced)
         {
-            return Incrementer.GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+            return Incrementer.GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants);
         }
         
         return segment.RutIncrement; // Return the rut increment from the input file if the segment has not been treated since the HSD survey
@@ -228,7 +228,7 @@ public class Initialiser
         bool hasBeenRehabilitated = segment.PavementAge < surveyAge;
         if (hasBeenRehabilitated)
         {
-            return Incrementer.GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+            return Incrementer.GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants);
         }
 
         double iriRaw = segment.IRIMeanLatent;
@@ -237,7 +237,7 @@ public class Initialiser
         bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
         if (hasBeenResurfaced)
         {
-            return Incrementer.GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+            return Incrementer.GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants);
         }
 
         return segment.IRIIncrement; // Return the IRI increment from the input file if the segment has not been treated since the HSD survey
@@ -302,7 +302,7 @@ public class Initialiser
         bool hasBeenRehabilitated = segment.PavementAge < surveyAge;
         if (hasBeenRehabilitated)
         {
-            return Incrementer.GetTextureIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+            return Incrementer.GetTextureIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants);
         }
 
         double textureRaw = segment.TextureMeanLatent;
@@ -310,7 +310,7 @@ public class Initialiser
         bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
         if (hasBeenResurfaced)
         {
-            return Incrementer.GetTextureIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+            return Incrementer.GetTextureIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants);
         }
 
         return segment.TextureIncrement; // Return the Texture increment from the input file if the segment has not been treated since the HSD survey

@@ -32,9 +32,9 @@ public static class SetupUtilities
         jcDataSet allSetupData = CSVHelper.ReadDataFromCsvFile(incrementResidualSDSetupFile);
         allSetupData.SetupRowKeys("parameter");
 
-        domainModel.SubModels.RutInrementResidualSDFunction = GetPieceWiseLinearModel("rut_inc_resid", allSetupData);
-        domainModel.SubModels.IRIInrementResidualSDFunction = GetPieceWiseLinearModel("iri_inc_resid", allSetupData);
-        domainModel.SubModels.TextureInrementResidualSDFunction = GetPieceWiseLinearModel("text_inc_resid", allSetupData);
+        domainModel.SubModels.RutIncrementResidualSDFunction = GetPieceWiseLinearModel("rut_inc_resid", allSetupData);
+        domainModel.SubModels.IRIIncrementResidualSDFunction = GetPieceWiseLinearModel("iri_inc_resid", allSetupData);
+        domainModel.SubModels.TextureIncrementResidualSDFunction = GetPieceWiseLinearModel("text_inc_resid", allSetupData);
 
 
        

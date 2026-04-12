@@ -71,8 +71,7 @@ public class Incrementer
         CheckTextureIncrementForEpisode(segment, _domainModel.Constants.MaximumEpisodeLengthTexture);
 
         double newValue = segment.TextureMeanLatent + segment.TextureIncrement;
-        double standardDeviation = _domainModel.SubModels.TextureInrementResidualSDFunction.GetValue(newValue);
-        double residual =  _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+        double residual = GetTextureResidual(_domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants, newValue);
         segment.TextureMeanLatent = newValue;
         segment.TextureMeanObserved = segment.TextureMeanLatent + residual;
 
@@ -104,8 +103,7 @@ public class Incrementer
         else
         {
             double newValue = segment.RutMeanLatent + segment.RutIncrement;
-            double standardDeviation = _domainModel.SubModels.RutInrementResidualSDFunction.GetValue(newValue);
-            double residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+            double residual = GetRutResidual(_domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants, newValue);
             segment.RutMeanLatent = newValue;
             segment.RutMeanObserved = segment.RutMeanLatent + residual;  // Update the observed rut mean with the residual to reflect the variability in the increment
         }        
@@ -129,8 +127,7 @@ public class Incrementer
         else
         {
             double newValue = segment.IRIMeanLatent + segment.IRIIncrement;
-            double standardDeviation = _domainModel.SubModels.IRIInrementResidualSDFunction.GetValue(newValue);
-            double residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+            double residual = GetIRIResidual(_domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants, newValue);
             segment.IRIMeanLatent = newValue;
             segment.IRIMeanObserved = segment.IRIMeanLatent + residual;
         }
@@ -147,12 +144,10 @@ public class Incrementer
             segment.RutAndIRIIncrementEpisodeLength++;
         }
         else
-        {
-            double rutCalibrationFactor = 1.0;
-
-            // Need to draw a new increment for rut and IRI, and reset the episode length
-            segment.RutIncrement = rutCalibrationFactor * GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
-            segment.IRIIncrement = Math.Min(0.3, GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random));
+        {           
+            // Need to draw a new increment for rut and IRI, and reset the episode length. Apply calibration factors.
+            segment.RutIncrement = GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants);
+            segment.IRIIncrement = GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants);
 
             //Reset the episode length to 1
             segment.RutAndIRIIncrementEpisodeLength = 1;
@@ -171,30 +166,54 @@ public class Incrementer
         else
         {
             // Need to draw a new increment for rut and IRI, and reset the episode length
-            segment.TextureIncrement = GetTextureIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random);
+            segment.TextureIncrement = GetTextureIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants);
 
             //Reset the episode length to 1
             segment.TextureIncrementEpisodeLength = 1;
         }
     }
-    
 
-    public static double GetRutIncrementForEpisode(RoadSegmentMC segment, SubModelDefinitions subModels, Random random)
+    public static double GetRutResidual(SubModelDefinitions subModels, Random random, Constants constants, double newValue)
     {
-        //return random.NextDouble() * 0.5; // Temporary random increment for testing purposes, replace with model prediction when available
-
-        return subModels.RutIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);
+        double residualCalibrationFactor = constants.CalFactRutResiduals;
+        double standardDeviation = subModels.RutIncrementResidualSDFunction.GetValue(newValue);
+        double residual = residualCalibrationFactor * subModels.NormalGenerator.NextNormal(0, standardDeviation);
+        return residual;
     }
 
-    public static double GetIRIIncrementForEpisode(RoadSegmentMC segment, SubModelDefinitions subModels, Random random)
+    public static double GetIRIResidual(SubModelDefinitions subModels, Random random, Constants constants, double newValue)
     {
-        //return random.NextDouble() * 0.1; // Temporary random increment for testing purposes, replace with model prediction when available
-        return subModels.IRIIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);        
+        double residualCalibrationFactor = constants.CalFactIriResiduals;
+        double standardDeviation = subModels.IRIIncrementResidualSDFunction.GetValue(newValue);
+        double residual = residualCalibrationFactor * subModels.NormalGenerator.NextNormal(0, standardDeviation);
+        return residual;
     }
 
-    public static double GetTextureIncrementForEpisode(RoadSegmentMC segment, SubModelDefinitions subModels, Random random)
+    public static double GetTextureResidual(SubModelDefinitions subModels, Random random, Constants constants, double newValue)
+    {
+        double residualCalibrationFactor = constants.CalFactTextureResiduals;
+        double standardDeviation = subModels.TextureIncrementResidualSDFunction.GetValue(newValue);
+        double residual = residualCalibrationFactor * subModels.NormalGenerator.NextNormal(0, standardDeviation);
+        return residual;
+    }
+
+
+    public static double GetRutIncrementForEpisode(RoadSegmentMC segment, SubModelDefinitions subModels, Random random, Constants constants)
     {        
-        return subModels.TextureIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);
+        double calibrationFactor = constants.CalFactRutIncrement;
+        return calibrationFactor * subModels.RutIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);
+    }
+
+    public static double GetIRIIncrementForEpisode(RoadSegmentMC segment, SubModelDefinitions subModels, Random random, Constants constants)
+    {
+        double calibrationFactor = constants.CalFactIriIncrement;
+        return calibrationFactor * subModels.IRIIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);        
+    }
+
+    public static double GetTextureIncrementForEpisode(RoadSegmentMC segment, SubModelDefinitions subModels, Random random, Constants constants)
+    {        
+        double calibrationFactor = constants.CalFactTextureIncrement;
+        return calibrationFactor * subModels.TextureIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);
     }
 
     private static Dictionary<string, object> GetSimulatorInputValues(RoadSegmentMC segment)

@@ -26,14 +26,14 @@ public class RoutineMaintenanceModeller
     /// <param name="segment"></param>
     public void UpdateRoutineMaintenanceExtents(RoadSegmentMC segment)
     {
-        double calibFactor = 0.8;  //Lower probability of maintenance to better match observed data. TODO: explore further calibration options when more data is available.
+        double calibrationFactor = _domainModel.Constants.CalFactPaMaintenanceProbability;
 
         // Deal first with PA maintenance (excluding potfill) 
-        double probabilityOfMaintenance = calibFactor * GetMaintenanceProbabilityPA(segment);
+        double probabilityOfMaintenance = calibrationFactor * GetMaintenanceProbabilityPA(segment);
         double randomValue = _frameworkModel.Random.NextDouble();
         if (randomValue < probabilityOfMaintenance)
         {
-            segment.MaintenancePavement = GetMaintenanceExtentPA(segment);
+            segment.MaintenancePavement = _domainModel.Constants.CalFactPaMaintenanceExtent * GetMaintenanceExtentPA(segment);
         }
         else
         {
@@ -41,18 +41,16 @@ public class RoutineMaintenanceModeller
         }
 
         // Now deal with potfill maintenance
-        probabilityOfMaintenance = GetMaintenanceProbabilityPotFill(segment);
+        probabilityOfMaintenance = _domainModel.Constants.CalFactPotfillProbability * GetMaintenanceProbabilityPotFill(segment);
         randomValue = _frameworkModel.Random.NextDouble();
         if (randomValue < probabilityOfMaintenance)
         {
-            segment.MaintenancePotfill = GetMaintenanceExtentPotfill(segment);
+            segment.MaintenancePotfill = _domainModel.Constants.CalFactPotfillMaintenanceExtent * GetMaintenanceExtentPotfill(segment);
         }
         else
         {
             segment.MaintenancePotfill = 0;
         }
-
-
     }
 
 
@@ -72,10 +70,10 @@ public class RoutineMaintenanceModeller
             { "surf_class", segment.SurfaceClassForRules },
             { "surf_count", segment.SurfaceNumberOfLayers }
         };
-        double reducRaw = _domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator.GetSimulatedValue(inputParameters, _frameworkModel.Random);
-        reducRaw = Math.Max(-2, reducRaw);
-        reducRaw = Math.Min(5, reducRaw);
-        return 0.0; // reducRaw;        
+
+        double calibrationFactor = _domainModel.Constants.CalFactRutReductionDueToPAMaintenance;
+        double reducRaw = _domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator.GetSimulatedValue(inputParameters, _frameworkModel.Random);        
+        return calibrationFactor * reducRaw;
     }
 
     /// <summary>
@@ -95,10 +93,9 @@ public class RoutineMaintenanceModeller
             { "surf_class", segment.SurfaceClassForRules }
         };
 
+        double calibrationFactor = _domainModel.Constants.CalFactIriReductionDueToPAMaintenance;
         double reducRaw = _domainModel.SubModels.IRIReductionAfterPaMaintenanceSimulator.GetSimulatedValue(inputParameters, _frameworkModel.Random);
-        reducRaw = Math.Max(-0.2, reducRaw);
-        reducRaw = Math.Min(0.7, reducRaw);
-        return 0.0; // reducRaw;  
+        return calibrationFactor * reducRaw;
     }
 
     /// <summary>

@@ -56,9 +56,8 @@ public class Resetter
 
         // Rut Depth                
         double newValue = GetRutResetValue(segment, _domainModel.SubModels, treatmentTypeCode, _frameworkModel.Random); //Reset value.
-        segment.RutIncrement = Incrementer.GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random); //Get new increment for new eposode.
-        double standardDeviation = _domainModel.SubModels.RutInrementResidualSDFunction.GetValue(newValue);
-        double residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+        segment.RutIncrement = Incrementer.GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants); //Get new increment for new eposode.        
+        double residual = Incrementer.GetTextureResidual(_domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants, newValue);
         segment.RutMeanLatent = newValue;
         segment.RutMeanObserved = segment.RutMeanLatent + residual;  // Update the observed rut mean with the residual to reflect the variability in the increment
         segment.RutAndIRIIncrementEpisodeLength = 1;  // Reset episode length to 1 since we are drawing a new increment for the episode
@@ -66,9 +65,8 @@ public class Resetter
 
         // IRI 
         newValue = GetIRIResetValue(segment, _domainModel.SubModels, treatmentTypeCode, _frameworkModel.Random); //Reset value.
-        segment.IRIIncrement = Incrementer.GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random); //Get new increment for new eposode.
-        standardDeviation = _domainModel.SubModels.IRIInrementResidualSDFunction.GetValue(newValue);
-        residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+        segment.IRIIncrement = Incrementer.GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants); //Get new increment for new eposode.        
+        residual = Incrementer.GetIRIResidual(_domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants, newValue);
         segment.IRIMeanLatent = newValue;
         segment.IRIMeanObserved = segment.IRIMeanLatent + residual;
         // No need to reset episode separately for IRI as it is the same as Rut episode
@@ -76,9 +74,8 @@ public class Resetter
         
         // Texture Depth               
         newValue = GetTextureDepthResetValue(segment, _domainModel.SubModels, treatmentTypeCode, _frameworkModel.Random); //Reset value.
-        segment.TextureIncrement = Incrementer.GetTextureIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random); //Get new increment for new eposode.
-        standardDeviation = _domainModel.SubModels.TextureInrementResidualSDFunction.GetValue(newValue);
-        residual = _domainModel.SubModels.NormalGenerator.NextNormal(0, standardDeviation);
+        segment.TextureIncrement = Incrementer.GetTextureIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants); //Get new increment for new eposode.        
+        residual = Incrementer.GetTextureResidual(_domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants, newValue);
         segment.TextureMeanLatent = newValue;
         segment.TextureMeanObserved = segment.TextureMeanLatent + residual;
         segment.TextureIncrementEpisodeLength = 1;  // Reset episode length to 1 since we are drawing a new increment for the episode

@@ -56,19 +56,19 @@ public class SubModelDefinitions
     /// Piecewise Linear function to calculate the Standard Deviation of the Rut Increment residual as a function of the current rut depth.
     /// Function generally gives higher SD values for higher rut depths, to reflect the higher variability in rut increment as rut depth increases. 
     /// </summary>
-    public PieceWiseLinearModel RutInrementResidualSDFunction { get; set; }
+    public PieceWiseLinearModel RutIncrementResidualSDFunction { get; set; }
 
 
     /// <summary>
     /// Piecewise Linear function to calculate the Standard Deviation of the IRI Increment residual as a function of the current IRI value.
     /// </summary>
-    public PieceWiseLinearModel IRIInrementResidualSDFunction { get; set; }
+    public PieceWiseLinearModel IRIIncrementResidualSDFunction { get; set; }
 
 
     /// <summary>
     /// Piecewise Linear function to calculate the Standard Deviation of the Texture Increment residual as a function of the current texture value.
     /// </summary>
-    public PieceWiseLinearModel TextureInrementResidualSDFunction { get; set; }
+    public PieceWiseLinearModel TextureIncrementResidualSDFunction { get; set; }
 
     #endregion
 

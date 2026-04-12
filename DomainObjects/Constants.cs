@@ -6,6 +6,9 @@ namespace MonteCarloRoadModelV1.DomainObjects;
 /// </summary>
 public class Constants
 {
+
+    #region Backing Variables
+
     private DateTime _baseDate; 
     private int _shortTermPeriod;
 
@@ -49,6 +52,7 @@ public class Constants
     private int _episodeLengthRutAndIRI;
     private int _episodeLengthTexture;
 
+    #endregion
 
     /// <summary>
     /// Base date for the model run. Maps to lookup set "gernal" and setting key "base_date".
@@ -105,33 +109,10 @@ public class Constants
     {
         get { return _min_pdi_to_treat; }
     }
-    
+
     #endregion
 
-    /// <summary>
-    /// Boosting factor for pothole area to bring it to scale with other distresses
-    /// </summary>
-    public double PotholeBoostFactor
-    {
-        get { return _potholeBoostFactor; }
-    }
-
-    /// <summary>
-    /// Calibration factor for maintenance cost
-    /// TODO: Discussion with D&K
-    /// </summary>
-    public double MaintenanceCostCalibrationFactor
-    {
-        get { return _maintenanceCostCalibrationFactor; }     
-    }
-
-    /// <summary>
-    /// Maintenance PDI threshold (force maintenance cost to zero if PDI is below this value)
-    /// </summary>
-    public double MaintenanceCostPDIThreshold
-    {
-        get { return _maintenanceCostPDIThreshold; }     
-    }
+    #region Treatment Selection MCDA
 
     /// <summary>
     /// Rut threshold above which a penalty(for Holding Actions) or boost(for Rehabs) is applied(see below)
@@ -271,6 +252,184 @@ public class Constants
         get { return _episodeLengthTexture; }
     }
 
+    #endregion
+
+    #region Calibration Factors
+
+    // --- Residuals ---
+
+    private double _calFactRutResiduals;
+    private double _calFactIriResiduals;
+    private double _calFactTextureResiduals;
+
+    // --- Maintenance ---
+
+    private double _calFactPaProba;
+    private double _calFactPotfillProba;
+    private double _calFactPaExtent;
+    private double _calFactPotfillExtent;
+    private double _calFactRutReduc;
+    private double _calFactIriReduc;
+
+    // --- Increments ---
+
+    private double _calFactRutIncrement;
+    private double _calFactIriIncrement;
+    private double _calFactTextureIncrement;
+
+    // --- Resets ---
+
+    private double _calFactRutReset;
+    private double _calFactIriReset;
+    private double _calFactTextureReset;
+
+
+    // ---- Residual calibration properties ----
+
+    /// <summary>
+    /// Calibration factor for Rut residuals. Residual is multiplied by this factor. Set to zero to remove residual effects completely.
+    /// Lookup set: cal_residuals, key: rut.
+    /// </summary>
+    public double CalFactRutResiduals
+    {
+        get { return _calFactRutResiduals; }
+    }
+
+    /// <summary>
+    /// Calibration factor for IRI residuals. Residual is multiplied by this factor. Set to zero to remove residual effects completely.
+    /// Lookup set: cal_residuals, key: iri.
+    /// </summary>
+    public double CalFactIriResiduals
+    {
+        get { return _calFactIriResiduals; }
+    }
+
+    /// <summary>
+    /// Calibration factor for Texture residuals. Residual is multiplied by this factor. Set to zero to remove residual effects completely.
+    /// Lookup set: cal_residuals, key: texture.
+    /// </summary>
+    public double CalFactTextureResiduals
+    {
+        get { return _calFactTextureResiduals; }
+    }
+
+    // ---- Maintenance calibration properties ----
+
+    /// <summary>
+    /// Calibration factor for probability of PA maintenance (excluding Pothole filling). Decreasing this decreases probability of PA maintenance.
+    /// Lookup set: cal_maintenance, key: pa_proba.
+    /// </summary>
+    public double CalFactPaMaintenanceProbability
+    {
+        get { return _calFactPaProba; }
+    }
+
+    /// <summary>
+    /// Calibration factor for probability of Pothole Filling maintenance. Decreasing this decreases probability of Pothole Filling.
+    /// Lookup set: cal_maintenance, key: potfill_proba.
+    /// </summary>
+    public double CalFactPotfillProbability
+    {
+        get { return _calFactPotfillProba; }
+    }
+
+    /// <summary>
+    /// Calibration factor for extent of PA Maintenance. Sampled extent is multiplied by this factor to reduce or increase.
+    /// Lookup set: cal_maintenance, key: pa_extent.
+    /// </summary>
+    public double CalFactPaMaintenanceExtent
+    {
+        get { return _calFactPaExtent; }
+    }
+
+    /// <summary>
+    /// Calibration factor for extent of Pothole filling. Sampled extent is multiplied by this factor to reduce or increase.
+    /// Lookup set: cal_maintenance, key: potfill_extent.
+    /// </summary>
+    public double CalFactPotfillMaintenanceExtent
+    {
+        get { return _calFactPotfillExtent; }
+    }
+
+    /// <summary>
+    /// Calibration factor for reduction (not reset) in Rut assigned when there is PA maintenance. Sampled value is multiplied by this to increase/decrease.
+    /// Lookup set: cal_maintenance, key: rut_reduc.
+    /// </summary>
+    public double CalFactRutReductionDueToPAMaintenance
+    {
+        get { return _calFactRutReduc; }
+    }
+
+    /// <summary>
+    /// Calibration factor for reduction (not reset) in IRI assigned when there is PA maintenance. Sampled value is multiplied by this to increase/decrease.
+    /// Lookup set: cal_maintenance, key: iri_reduc.
+    /// </summary>
+    public double CalFactIriReductionDueToPAMaintenance
+    {
+        get { return _calFactIriReduc; }
+    }
+
+    // ---- Increment calibration properties ----
+
+    /// <summary>
+    /// Calibration factor for episodic increment for Rut. Sampled value is multiplied by this factor to reduce or increase.
+    /// Lookup set: cal_increments, key: rut.
+    /// </summary>
+    public double CalFactRutIncrement
+    {
+        get { return _calFactRutIncrement; }
+    }
+
+    /// <summary>
+    /// Calibration factor for episodic increment for IRI. Sampled value is multiplied by this factor to reduce or increase.
+    /// Lookup set: cal_increments, key: iri.
+    /// </summary>
+    public double CalFactIriIncrement
+    {
+        get { return _calFactIriIncrement; }
+    }
+
+    /// <summary>
+    /// Calibration factor for episodic increment for Texture. Sampled value is multiplied by this factor to reduce or increase.
+    /// Lookup set: cal_increments, key: texture.
+    /// </summary>
+    public double CalFactTextureIncrement
+    {
+        get { return _calFactTextureIncrement; }
+    }
+
+    // ---- Reset calibration properties ----
+
+    /// <summary>
+    /// Calibration factor for Rut reset. Sampled reset value is multiplied by this factor to increase or decrease reset value.
+    /// Lookup set: cal_resets, key: rut.
+    /// </summary>
+    public double CalFactRutReset
+    {
+        get { return _calFactRutReset; }
+    }
+
+    /// <summary>
+    /// Calibration factor for IRI reset. Sampled reset value is multiplied by this factor to increase or decrease reset value.
+    /// Lookup set: cal_resets, key: iri.
+    /// </summary>
+    public double CalFactIriReset
+    {
+        get { return _calFactIriReset; }
+    }
+
+    /// <summary>
+    /// Calibration factor for Texture reset. Sampled reset value is multiplied by this factor to increase or decrease reset value.
+    /// Lookup set: cal_resets, key: texture.
+    /// </summary>
+    public double CalFactTextureReset
+    {
+        get { return _calFactTextureReset; }
+    }
+
+    #endregion
+
+
     public Constants(Dictionary<string, Dictionary<string, object>> lookupSets)
     {        
         _baseDate = JCass_Core.Utils.HelperMethods.ParseDateNoTime(lookupSets["general"]["base_date"]);
@@ -309,6 +468,29 @@ public class Constants
 
         _episodeLengthRutAndIRI = Convert.ToInt32(lookupSets["episode_length_max"]["rut_and_iri"]);
         _episodeLengthTexture = Convert.ToInt32(lookupSets["episode_length_max"]["texture"]);
+
+        // Calibration factors - Residuals
+        _calFactRutResiduals = Convert.ToDouble(lookupSets["cal_residuals"]["rut"]);
+        _calFactIriResiduals = Convert.ToDouble(lookupSets["cal_residuals"]["iri"]);
+        _calFactTextureResiduals = Convert.ToDouble(lookupSets["cal_residuals"]["texture"]);
+
+        // Calibration factors - Maintenance
+        _calFactPaProba = Convert.ToDouble(lookupSets["cal_maintenance"]["pa_proba"]);
+        _calFactPotfillProba = Convert.ToDouble(lookupSets["cal_maintenance"]["potfill_proba"]);
+        _calFactPaExtent = Convert.ToDouble(lookupSets["cal_maintenance"]["pa_extent"]);
+        _calFactPotfillExtent = Convert.ToDouble(lookupSets["cal_maintenance"]["potfill_extent"]);
+        _calFactRutReduc = Convert.ToDouble(lookupSets["cal_maintenance"]["rut_reduc"]);
+        _calFactIriReduc = Convert.ToDouble(lookupSets["cal_maintenance"]["iri_reduc"]);
+
+        // Calibration factors - Increments
+        _calFactRutIncrement = Convert.ToDouble(lookupSets["cal_increments"]["rut"]);
+        _calFactIriIncrement = Convert.ToDouble(lookupSets["cal_increments"]["iri"]);
+        _calFactTextureIncrement = Convert.ToDouble(lookupSets["cal_increments"]["texture"]);
+
+        // Calibration factors - Resets
+        _calFactRutReset = Convert.ToDouble(lookupSets["cal_resets"]["rut"]);
+        _calFactIriReset = Convert.ToDouble(lookupSets["cal_resets"]["iri"]);
+        _calFactTextureReset = Convert.ToDouble(lookupSets["cal_resets"]["texture"]);
 
     }
 

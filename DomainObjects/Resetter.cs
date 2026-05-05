@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using JCass_Economics.Utilities;
 using JCass_ModelCore.Models;
 using JCass_ModelCore.Treatments;
 
@@ -46,6 +47,11 @@ public class Resetter
 
         // No need to update Pavement Life Achieved and HCV Risk because it is automatically calculated based on the HCV and Pavement Life Achieved
 
+        if (segment.ElementIndex == 4028)
+        {
+            int kk = 9;
+        }
+
         // Update surfacing age, class, material, thickness, function, expected life based on the treatment being applied. 
         UpdateSurfacingPropertiesForTreatment(segment, treatment);
 
@@ -55,7 +61,7 @@ public class Resetter
         //--------------------------------------------------------------------------------------------------------------------------------------------
 
         // Rut Depth                
-        double newValue = GetRutResetValue(segment, _domainModel.SubModels, treatmentTypeCode, _frameworkModel.Random); //Reset value.
+        double newValue = GetRutResetValue(segment, _domainModel.SubModels, treatment.TreatmentName, _domainModel.Constants, _frameworkModel.Random); //Reset value.
         segment.RutIncrement = Incrementer.GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants); //Get new increment for new eposode.        
         double residual = Incrementer.GetTextureResidual(_domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants, newValue);
         segment.RutMeanLatent = newValue;
@@ -64,7 +70,7 @@ public class Resetter
 
 
         // IRI 
-        newValue = GetIRIResetValue(segment, _domainModel.SubModels, treatmentTypeCode, _frameworkModel.Random); //Reset value.
+        newValue = GetIRIResetValue(segment, _domainModel.SubModels, treatment.TreatmentName, _domainModel.Constants, _frameworkModel.Random); //Reset value.
         segment.IRIIncrement = Incrementer.GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants); //Get new increment for new eposode.        
         residual = Incrementer.GetIRIResidual(_domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants, newValue);
         segment.IRIMeanLatent = newValue;
@@ -148,27 +154,43 @@ public class Resetter
     /// </summary>
     /// <param name="segment">Segment to simulate the Rut Reset value for</param>
     /// <param name="subModels">Sub-model definitions to use for the simulation</param>
-    /// <param name="treatmentTypeCode">Code representing the type of treatment (e.g., "resurf" or "rehab")</param>
+    /// <param name="treatmentName">Treatment Name</param>
+    /// <param name="constants">Model constants</param>
     /// <param name="random">Random number generator to use for the simulation</param>
     /// <returns>The simulated Rut Reset value</returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public static double GetRutResetValue(RoadSegmentMC segment, SubModelDefinitions subModels, string treatmentTypeCode, Random random)
+    public static double GetRutResetValue(RoadSegmentMC segment, SubModelDefinitions subModels, string treatmentName, Constants constants, Random random)
     {
         
         var inputParameters = GetInputParametersForSegment(segment);
 
-        if (treatmentTypeCode == "resurf")
+        // Get the treatment specific calibration adjustment factor.
+        double adjustment = 0;
+        if (constants.ResetAdjustmentFactorsRut.ContainsKey(treatmentName))
         {
-            return subModels.RutResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
+            adjustment = constants.ResetAdjustmentFactorsRut[treatmentName];
         }
-        else if (treatmentTypeCode == "rehab")
+
+        double resettedValue;
+
+        if (treatmentName.Contains("resurf"))
         {
-            return subModels.RutResetSimulatorRehab.GetSimulatedValue(inputParameters, random);
+            resettedValue = subModels.RutResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
+        }
+        else if (treatmentName.Contains("rehab"))
+        {
+            resettedValue = subModels.RutResetSimulatorRehab.GetSimulatedValue(inputParameters, random);
         }
         else
         {
-            throw new InvalidOperationException($"Unknown treatment type code: {treatmentTypeCode}");
+            throw new InvalidOperationException($"Unknown treatment type code: {treatmentName}");
         }
+
+        resettedValue = resettedValue + adjustment; // Apply the treatment specific adjustment to the reset value
+
+        // Apply the overall calibration factor to the reset value after applying the treatment specific adjustment
+        double calibrationFactor = constants.CalFactRutReset;
+        return resettedValue * calibrationFactor;
     }
 
     #endregion
@@ -180,26 +202,43 @@ public class Resetter
     /// </summary>
     /// <param name="segment">Segment to simulate the IRI Reset value for</param>
     /// <param name="subModels">Sub-model definitions to use for the simulation</param>
-    /// <param name="treatmentTypeCode">Code representing the type of treatment (e.g., "resurf" or "rehab")</param>
+    /// <param name="treatmentName">Treatment Name</param>
+    /// <param name="constants">Model constants</param>
     /// <param name="random">Random number generator to use for the simulation</param>
     /// <returns>The simulated IRI Reset value</returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public static double GetIRIResetValue(RoadSegmentMC segment, SubModelDefinitions subModels, string treatmentTypeCode, Random random)
+    public static double GetIRIResetValue(RoadSegmentMC segment, SubModelDefinitions subModels, string treatmentName, Constants constants, Random random)
     {
         var inputParameters = GetInputParametersForSegment(segment);
-
-        if (treatmentTypeCode == "resurf")
+                
+        // Get the treatment specific calibration adjustment factor.
+        double adjustment = 0;
+        if (constants.ResetAdjustmentFactorsIRI.ContainsKey(treatmentName))
         {
-            return subModels.IRIResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
+            adjustment = constants.ResetAdjustmentFactorsIRI[treatmentName];
         }
-        else if (treatmentTypeCode == "rehab")
+
+        double resettedValue;
+
+        if (treatmentName.Contains("resurf"))
         {
-            return subModels.IRIResetSimulatorRehab.GetSimulatedValue(inputParameters, random);
+            resettedValue = subModels.IRIResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
+        }
+        else if (treatmentName.Contains("rehab"))
+        {
+            resettedValue = subModels.IRIResetSimulatorRehab.GetSimulatedValue(inputParameters, random);
         }
         else
         {
-            throw new InvalidOperationException($"Unknown treatment type code: {treatmentTypeCode}");
+            throw new InvalidOperationException($"Unknown treatment type code: {treatmentName}");
         }
+
+        resettedValue = resettedValue + adjustment; // Apply the treatment specific adjustment to the reset value
+
+        // Apply the overall calibration factor to the reset value after applying the treatment specific adjustment
+        double calibrationFactor = constants.CalFactIriReset;
+        return resettedValue * calibrationFactor;
+
     }
         
 

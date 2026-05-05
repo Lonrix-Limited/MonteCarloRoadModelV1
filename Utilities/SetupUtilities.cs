@@ -35,9 +35,7 @@ public static class SetupUtilities
         domainModel.SubModels.RutIncrementResidualSDFunction = GetPieceWiseLinearModel("rut_inc_resid", allSetupData);
         domainModel.SubModels.IRIIncrementResidualSDFunction = GetPieceWiseLinearModel("iri_inc_resid", allSetupData);
         domainModel.SubModels.TextureIncrementResidualSDFunction = GetPieceWiseLinearModel("text_inc_resid", allSetupData);
-
-
-       
+               
 
     }
 
@@ -54,10 +52,10 @@ public static class SetupUtilities
     {
         //------------------------------------  Set up distribution simulators for increments------------------------------------
 
-        string distributionSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/cohorts_b_increments_5yrs_rut_mean_rate.csv");       
+        string distributionSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/cohorts_b_increments_6yrs_rut_mean_rate.csv");       
         domainModel.SubModels.RutIncrementSimulator = SetupUtilities.GetDistributionSimulator("rut_inc", distributionSetupFile, "Rut Increment");
 
-        distributionSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/cohorts_b_increments_5yrs_iri_mean_rate.csv");
+        distributionSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/cohorts_b_increments_6yrs_iri_mean_rate.csv");
         domainModel.SubModels.IRIIncrementSimulator = SetupUtilities.GetDistributionSimulator("iri_inc", distributionSetupFile, "IRI Increment");
 
         distributionSetupFile = System.IO.Path.Combine(workFolder, @"domain_model/cohorts_b_increments_3yrs_text_mean_rate.csv");
@@ -155,10 +153,10 @@ public static class SetupUtilities
        
         //-----------------  Set up distribution simulators for REDUCTION in Rut and IRI after PA Maintenance ------------------------------------
 
-        string distributionSetupFile = Path.Combine(workFolder, @"domain_model\cohorts_maint_reduc_data_iri_reduction.csv");        
+        string distributionSetupFile = Path.Combine(workFolder, @"domain_model/cohorts_maint_reduc_data_final_iri_reduction.csv");
         domainModel.SubModels.IRIReductionAfterPaMaintenanceSimulator = SetupUtilities.GetDistributionSimulator("iri_reduction", distributionSetupFile, "IRI Reduction after PA Maintenance");
 
-        distributionSetupFile = Path.Combine(workFolder, @"domain_model\cohorts_maint_reduc_data_rut_reduction.csv");
+        distributionSetupFile = Path.Combine(workFolder, @"domain_model/cohorts_maint_reduc_data_final_rut_reduction.csv");
         domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator = SetupUtilities.GetDistributionSimulator("rut_reduction", distributionSetupFile, "Rut Reduction after PA Maintenance");
 
     }

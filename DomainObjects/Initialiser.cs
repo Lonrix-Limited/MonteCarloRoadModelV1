@@ -20,7 +20,7 @@ public class Initialiser
     public RoadSegmentMC InitialiseSegment(int iElemIndex)
     {
 
-        if (iElemIndex == 22991)
+        if (iElemIndex == 4028)
         {
             int kk = 9;
         }
@@ -122,7 +122,7 @@ public class Initialiser
         // If segment has been rehabilitated, return the lookup value for the rutting reset
         bool hasBeenRehabilitated = segment.PavementAge < surveyAge;
         if (hasBeenRehabilitated) {
-            return Resetter.GetRutResetValue(segment, _domainModel.SubModels, "rehab", _frameworkModel.Random);
+            return Resetter.GetRutResetValue(segment, _domainModel.SubModels, "rehab", _domainModel.Constants, _frameworkModel.Random);
         }
 
         double ruttingRaw = segment.RutMeanLatent;
@@ -131,7 +131,7 @@ public class Initialiser
         bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
         if (hasBeenResurfaced)
         {
-            return Resetter.GetRutResetValue(segment, _domainModel.SubModels, "resurf", _frameworkModel.Random);
+            return Resetter.GetRutResetValue(segment, _domainModel.SubModels, "resurf", _domainModel.Constants, _frameworkModel.Random);
         }
 
         // If segment has not been rehabilitated or resurfaced, use the raw rutting value
@@ -191,12 +191,17 @@ public class Initialiser
     private double GetInitialIRIValue(RoadSegmentMC segment)
     {
         double surveyAge = GetHSDSurveyAge(segment);
-
+        
         // If segment has been rehabilitated, return the lookup value for the IRI reset
         bool hasBeenRehabilitated = segment.PavementAge < surveyAge;
         if (hasBeenRehabilitated)
         {
-            return Resetter.GetIRIResetValue(segment, _domainModel.SubModels, "rehab", _frameworkModel.Random);
+            // Estimate the treatment name based on material type
+            string treatmentName = "cs_rehab";
+            if (segment.SurfaceClass == "ac") treatmentName = "ac_rehab";
+            if (segment.SurfaceClass == "ogpa") treatmentName = "ogpa_rehab";
+
+            return Resetter.GetIRIResetValue(segment, _domainModel.SubModels, treatmentName, _domainModel.Constants, _frameworkModel.Random);
         }
 
         double iriRaw = segment.IRIMeanLatent;
@@ -205,7 +210,11 @@ public class Initialiser
         bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
         if (hasBeenResurfaced)
         {
-            return Resetter.GetIRIResetValue(segment, _domainModel.SubModels, "resurf", _frameworkModel.Random);
+            // Estimate the treatment name based on material type
+            string treatmentName = "cs_resurf";
+            if (segment.SurfaceClass == "ac") treatmentName = "ac_resurf";
+            if (segment.SurfaceClass == "ogpa") treatmentName = "ogpa_resurf";
+            return Resetter.GetIRIResetValue(segment, _domainModel.SubModels, treatmentName, _domainModel.Constants, _frameworkModel.Random);
         }
 
         // If segment has not been rehabilitated or resurfaced, use the raw IRI value

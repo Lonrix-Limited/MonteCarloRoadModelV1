@@ -70,10 +70,11 @@ public class RoutineMaintenanceModeller
             { "surf_class", segment.SurfaceClassForRules },
             { "surf_count", segment.SurfaceNumberOfLayers }
         };
-
-        double calibrationFactor = _domainModel.Constants.CalFactRutReductionDueToPAMaintenance;
-        double reducRaw = _domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator.GetSimulatedValue(inputParameters, _frameworkModel.Random);        
-        return calibrationFactor * reducRaw;
+        
+        double reducRaw = _domainModel.SubModels.RutReductionAfterPaMaintenanceSimulator.GetSimulatedValue(inputParameters, _frameworkModel.Random);     
+        double minReduction = _domainModel.Constants.CalFactMinRutReductionDueToPAMaintenance;
+        if (reducRaw < minReduction) reducRaw = minReduction;  // Set a minimum reduction to avoid cases where the model might predict a very small reduction that is not realistic based on engineering judgement.        
+        return reducRaw;
     }
 
     /// <summary>
@@ -92,10 +93,11 @@ public class RoutineMaintenanceModeller
             { "surf_count", segment.SurfaceNumberOfLayers },
             { "surf_class", segment.SurfaceClassForRules }
         };
-
-        double calibrationFactor = _domainModel.Constants.CalFactIriReductionDueToPAMaintenance;
+        
         double reducRaw = _domainModel.SubModels.IRIReductionAfterPaMaintenanceSimulator.GetSimulatedValue(inputParameters, _frameworkModel.Random);
-        return calibrationFactor * reducRaw;
+        double minReduction = _domainModel.Constants.CalFactMinIriReductionDueToPAMaintenance;
+        if (reducRaw < minReduction) reducRaw = minReduction;  // Set a minimum reduction to avoid cases where the model might predict a very small reduction that is not realistic based on engineering judgement.
+        return reducRaw;
     }
 
     /// <summary>

@@ -22,7 +22,7 @@ public class Incrementer
 
     public RoadSegmentMC Increment(RoadSegmentMC segment, int period)
     {
-        if (segment.ElementIndex == 22991)
+        if (segment.ElementIndex == 4028)
         {
             int kk = 9;
         }
@@ -94,7 +94,7 @@ public class Incrementer
     /// <param name="segment"></param>
     private void IncrementRut(RoadSegmentMC segment)
     {
-        if (segment.MaintenancePavement > 0)
+        if (segment.MaintenancePavement > _domainModel.Constants.RutReductionDueToPAMaintenanceThreshold)
         {            
             double reductionDueToMaintenance = _domainModel.MaintenanceModel.GetRutReductionDueToMaintenance(segment);
             segment.RutMeanLatent = Math.Max(1.5, segment.RutMeanLatent - reductionDueToMaintenance);
@@ -118,11 +118,11 @@ public class Incrementer
     /// <param name="segment"></param>
     private void IncrementIRI(RoadSegmentMC segment)
     {        
-        if (segment.MaintenancePavement > 0)
+        if (segment.MaintenancePavement > _domainModel.Constants.IriReductionDueToPAMaintenanceThreshold)
         {
             double reductionDueToMaintenance = _domainModel.MaintenanceModel.GetIRIReductionDueToMaintenance(segment);
-            segment.IRIMeanLatent = Math.Max(0.5, segment.IRIMeanLatent - reductionDueToMaintenance);
-            segment.IRIMeanObserved = Math.Max(0.5, segment.IRIMeanObserved - reductionDueToMaintenance);
+            segment.IRIMeanLatent = Math.Max(2.5, segment.IRIMeanLatent - reductionDueToMaintenance);
+            segment.IRIMeanObserved = Math.Max(2.5, segment.IRIMeanObserved - reductionDueToMaintenance);
         }
         else
         {
@@ -148,7 +148,7 @@ public class Incrementer
             // Need to draw a new increment for rut and IRI, and reset the episode length. Apply calibration factors.
             segment.RutIncrement = GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants);
             segment.IRIIncrement = GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants);
-
+            
             //Reset the episode length to 1
             segment.RutAndIRIIncrementEpisodeLength = 1;
         }        
@@ -200,20 +200,31 @@ public class Incrementer
 
     public static double GetRutIncrementForEpisode(RoadSegmentMC segment, SubModelDefinitions subModels, Random random, Constants constants)
     {        
-        double calibrationFactor = constants.CalFactRutIncrement;
-        return calibrationFactor * subModels.RutIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);
+        double sampledValue = subModels.RutIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);
+        double calibrationFactor = constants.CalFactRutIncrement.GetValue(sampledValue);
+        if (sampledValue > constants.CalMaxRutIncrement) sampledValue = constants.CalMaxRutIncrement;
+        return calibrationFactor * sampledValue;
     }
 
     public static double GetIRIIncrementForEpisode(RoadSegmentMC segment, SubModelDefinitions subModels, Random random, Constants constants)
-    {
-        double calibrationFactor = constants.CalFactIriIncrement;
-        return calibrationFactor * subModels.IRIIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);        
+    {        
+        double sampledValue = subModels.IRIIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);
+        double calibrationFactor = constants.CalFactIriIncrement.GetValue(sampledValue);
+        if (sampledValue > constants.CalMaxIriIncrement) sampledValue = constants.CalMaxIriIncrement;
+        return calibrationFactor * sampledValue;
     }
 
     public static double GetTextureIncrementForEpisode(RoadSegmentMC segment, SubModelDefinitions subModels, Random random, Constants constants)
-    {        
-        double calibrationFactor = constants.CalFactTextureIncrement;
-        return calibrationFactor * subModels.TextureIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);
+    {
+        if (segment.SurfaceClass != "cs")
+        {
+            // For non-chipseal surfaces, estimate texture increment as uniform between 0.05 and -0.04 (based on box plot for AC and OGPA)
+            return random.NextDouble() * (0.05 - (-0.04)) - 0.04;
+        }
+
+        double sampledValue = subModels.TextureIncrementSimulator.GetSimulatedValue(GetSimulatorInputValues(segment), random);
+        double calibrationFactor = constants.CalFactTextureIncrement.GetValue(sampledValue);
+        return calibrationFactor * sampledValue;
     }
 
     private static Dictionary<string, object> GetSimulatorInputValues(RoadSegmentMC segment)
@@ -229,7 +240,7 @@ public class Incrementer
             { "adt", segment.AverageDailyTraffic },
             { "heavy_perc", segment.HeavyVehiclePercentage },
             { "surf_thick", segment.SurfaceThickness },
-            {"rainfall", segment.RainfallMM },
+            { "rainfall", segment.RainfallMM },
             { "surf_class", segment.SurfaceClassForRules },
             { "surf_count", segment.SurfaceNumberOfLayers }
         };

@@ -17,7 +17,6 @@ public class MonteCarloRoadModelV1 : DomainModelBase
 
     public Constants Constants { get; set; }
 
-
     private Initialiser _initialiser;
 
     private Incrementer _incrementer;
@@ -27,8 +26,7 @@ public class MonteCarloRoadModelV1 : DomainModelBase
     public SubModelDefinitions SubModels { get; set; }
 
     public RoutineMaintenanceModeller MaintenanceModel;
-
-
+    
     #endregion
 
     public MonteCarloRoadModelV1()

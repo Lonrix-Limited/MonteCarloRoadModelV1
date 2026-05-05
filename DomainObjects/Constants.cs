@@ -1,4 +1,6 @@
 ﻿
+using JCass_Core.Statistics;
+
 namespace MonteCarloRoadModelV1.DomainObjects;
 
 /// <summary>
@@ -51,6 +53,8 @@ public class Constants
     // Episode Lengths for deterioration rates
     private int _episodeLengthRutAndIRI;
     private int _episodeLengthTexture;
+
+    //public int DebugLogCounter = 0;
 
     #endregion
 
@@ -270,18 +274,25 @@ public class Constants
     private double _calFactPotfillExtent;
     private double _calFactRutReduc;
     private double _calFactIriReduc;
+    private double _calMinRutReducPaMaint;
+    private double _calMinIRIReducPaMaint;
 
     // --- Increments ---
 
-    private double _calFactRutIncrement;
-    private double _calFactIriIncrement;
-    private double _calFactTextureIncrement;
+    private PieceWiseLinearModel _calFactRutIncrement;
+    private PieceWiseLinearModel _calFactIriIncrement;
+    private PieceWiseLinearModel _calFactTextureIncrement;
+    private double _calMaxRutIncrement;
+    private double _calMaxIriIncrement;
 
     // --- Resets ---
 
     private double _calFactRutReset;
     private double _calFactIriReset;
     private double _calFactTextureReset;
+
+    private Dictionary<string, double> _resetAdjustmentFactorsIRI;
+    private Dictionary<string, double> _resetAdjustmentFactorsRut;
 
 
     // ---- Residual calibration properties ----
@@ -352,21 +363,45 @@ public class Constants
     }
 
     /// <summary>
-    /// Calibration factor for reduction (not reset) in Rut assigned when there is PA maintenance. Sampled value is multiplied by this to increase/decrease.
+    /// Extent of PA maintenance at which Rut-reduction to to maintenance kicks in. Range should be 0 to 1. Value of greater than one 
+    /// effectively removes rut reduction due to PA Maint.
     /// Lookup set: cal_maintenance, key: rut_reduc.
     /// </summary>
-    public double CalFactRutReductionDueToPAMaintenance
+    public double RutReductionDueToPAMaintenanceThreshold
     {
         get { return _calFactRutReduc; }
     }
 
     /// <summary>
-    /// Calibration factor for reduction (not reset) in IRI assigned when there is PA maintenance. Sampled value is multiplied by this to increase/decrease.
+    /// Extent of PA maintenance at which IRI-reduction to to maintenance kicks in. Range should be 0 to 1. Value of greater than one 
     /// Lookup set: cal_maintenance, key: iri_reduc.
     /// </summary>
-    public double CalFactIriReductionDueToPAMaintenance
+    public double IriReductionDueToPAMaintenanceThreshold
     {
         get { return _calFactIriReduc; }
+    }
+
+    /// <summary>
+    /// Minimum Rut reduction due to PA Maintenance allowed (in mm). Set this to a low negative to prevent PA maint from making Rut much worse. For
+    /// example, since negative reduction means rut gets worse, setting this to -2 means that if sampled reduction is -3mm, it will be 
+    /// calibrated to -2mm (i.e. only 2mm worse instead of 3mm worse). Set this to zero or a positive value to prevent PA maintenance 
+    /// from making Rut worse at all.
+    /// </summary>
+    public double CalFactMinRutReductionDueToPAMaintenance
+    {
+        get { return _calMinRutReducPaMaint; }
+    }
+
+
+    /// <summary>
+    /// Minimum IRI reduction due to PA Maintenance allowed (in mm/m). Set this to a low negative to prevent PA maint from making IRI much worse. For
+    /// example, since negative reduction means IRI gets worse, setting this to -0.5 mm/m means that if sampled reduction is -1.50 mm/m, it will be
+    /// calibrated to -0.5 mm/m (i.e. only 0.5 mm/m worse instead of 1.5 mm/m worse). Set this to zero or a positive value to prevent PA maintenance
+    /// from making IRI worse at all.
+    /// </summary>
+    public double CalFactMinIriReductionDueToPAMaintenance
+    {
+        get { return _calMinIRIReducPaMaint; }
     }
 
     // ---- Increment calibration properties ----
@@ -375,25 +410,43 @@ public class Constants
     /// Calibration factor for episodic increment for Rut. Sampled value is multiplied by this factor to reduce or increase.
     /// Lookup set: cal_increments, key: rut.
     /// </summary>
-    public double CalFactRutIncrement
+    public PieceWiseLinearModel CalFactRutIncrement
     {
         get { return _calFactRutIncrement; }
+    }
+
+    /// <summary>
+    /// Maximum Rut increment allowed for an episode, in mm/year. Set this to a low value to prevent excessively high increments for some episodes. 
+    /// Set this to a very high value to effectively have no maximum.
+    /// </summary>
+    public double CalMaxRutIncrement
+    {
+        get { return _calMaxRutIncrement; }
     }
 
     /// <summary>
     /// Calibration factor for episodic increment for IRI. Sampled value is multiplied by this factor to reduce or increase.
     /// Lookup set: cal_increments, key: iri.
     /// </summary>
-    public double CalFactIriIncrement
+    public PieceWiseLinearModel CalFactIriIncrement
     {
         get { return _calFactIriIncrement; }
+    }
+
+    /// <summary>
+    /// Maximum IRI increment allowed for an episode, in mm/m/year. Set this to a low value to prevent excessively high increments for some episodes.
+    /// Set this to a very high value to effectively have no maximum.
+    /// </summary>
+    public double CalMaxIriIncrement
+    {
+        get { return _calMaxIriIncrement; }
     }
 
     /// <summary>
     /// Calibration factor for episodic increment for Texture. Sampled value is multiplied by this factor to reduce or increase.
     /// Lookup set: cal_increments, key: texture.
     /// </summary>
-    public double CalFactTextureIncrement
+    public PieceWiseLinearModel CalFactTextureIncrement
     {
         get { return _calFactTextureIncrement; }
     }
@@ -425,6 +478,24 @@ public class Constants
     public double CalFactTextureReset
     {
         get { return _calFactTextureReset; }
+    }
+
+    /// <summary>
+    /// Adjustment factors for IRI resets based on Treatment Type. This value is added to the reset value after multiplying by the CalFactIriReset factor.
+    /// Lookup set: cal_reset_adj_iri, key: with sub-keys for each treatment type.
+    /// </summary>
+    public Dictionary<string, double> ResetAdjustmentFactorsIRI
+    {
+        get { return _resetAdjustmentFactorsIRI; }
+    }
+
+    /// <summary>
+    /// Adjustment factors for Rut resets based on Treatment Type. This value is added to the reset value after multiplying by the CalFactRutReset factor.
+    /// Lookup set: cal_reset_adj_rut, key: with sub-keys for each treatment type.
+    /// </summary>
+    public Dictionary<string, double> ResetAdjustmentFactorsRut
+    {
+        get { return _resetAdjustmentFactorsRut; }
     }
 
     #endregion
@@ -481,16 +552,32 @@ public class Constants
         _calFactPotfillExtent = Convert.ToDouble(lookupSets["cal_maintenance"]["potfill_extent"]);
         _calFactRutReduc = Convert.ToDouble(lookupSets["cal_maintenance"]["rut_reduc"]);
         _calFactIriReduc = Convert.ToDouble(lookupSets["cal_maintenance"]["iri_reduc"]);
+        _calMinRutReducPaMaint = Convert.ToDouble(lookupSets["cal_maintenance"]["rut_reduc_min"]);
+        _calMinIRIReducPaMaint = Convert.ToDouble(lookupSets["cal_maintenance"]["iri_reduc_min"]);
 
         // Calibration factors - Increments
-        _calFactRutIncrement = Convert.ToDouble(lookupSets["cal_increments"]["rut"]);
-        _calFactIriIncrement = Convert.ToDouble(lookupSets["cal_increments"]["iri"]);
-        _calFactTextureIncrement = Convert.ToDouble(lookupSets["cal_increments"]["texture"]);
+        _calFactRutIncrement = new PieceWiseLinearModel(lookupSets["cal_increments"]["rut"].ToString(),false);
+        _calFactIriIncrement = new PieceWiseLinearModel(lookupSets["cal_increments"]["iri"].ToString(),false);
+        _calFactTextureIncrement = new PieceWiseLinearModel(lookupSets["cal_increments"]["texture"].ToString(),false);
+        _calMaxRutIncrement = Convert.ToDouble(lookupSets["cal_increments"]["rut_max"]);
+        _calMaxIriIncrement = Convert.ToDouble(lookupSets["cal_increments"]["iri_max"]);
 
         // Calibration factors - Resets
         _calFactRutReset = Convert.ToDouble(lookupSets["cal_resets"]["rut"]);
         _calFactIriReset = Convert.ToDouble(lookupSets["cal_resets"]["iri"]);
         _calFactTextureReset = Convert.ToDouble(lookupSets["cal_resets"]["texture"]);
+
+        _resetAdjustmentFactorsIRI = new Dictionary<string, double>();
+        foreach (var key in lookupSets["cal_reset_adj_iri"].Keys)
+        {
+            _resetAdjustmentFactorsIRI[key] = Convert.ToDouble(lookupSets["cal_reset_adj_iri"][key]);
+        }
+
+        _resetAdjustmentFactorsRut = new Dictionary<string, double>();
+        foreach (var key in lookupSets["cal_reset_adj_rut"].Keys)
+        {
+            _resetAdjustmentFactorsRut[key] = Convert.ToDouble(lookupSets["cal_reset_adj_rut"][key]);
+        }
 
     }
 

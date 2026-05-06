@@ -149,10 +149,21 @@ public static class RoadSegmentFactoryMC
         segment.TextureMeanObserved = numParamValues["par_text_obs"];  // Updated Texture observed value
         segment.TextureIncrementEpisodeLength = Convert.ToInt32(numParamValues["par_text_epi_len"]);
 
+        // Distress indices
+        segment.PavementDistressIndex = numParamValues["par_pdi"];
+        segment.SurfaceDistressIndex = numParamValues["par_sdi"];
+        segment.PavementDistressIndexRank = numParamValues["par_pdi_rank"];
+        segment.SurfaceDistressIndexRank = numParamValues["par_sdi_rank"];
+
+        segment.RehabilitationNeedsIndexRank = numParamValues["par_rni_rank"];
+        segment.SurfacingNeedsIndexRank = numParamValues["par_sni_rank"];
+
         // Routine Maintenance
         segment.MaintenancePavement = numParamValues["par_maint_pa"]; // Updated maintenance extent for pavement
         segment.MaintenancePotfill = numParamValues["par_maint_poth"]; // Updated maintenance extent for pothole filling
 
+        
+       
         // Ensure that the method to re-calculate index values is called after return
 
         return segment;

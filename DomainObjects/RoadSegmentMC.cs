@@ -98,6 +98,21 @@ public class RoadSegmentMC
         set => _surfaceClass = value?.ToLower();
     }
 
+    /// <summary>
+    /// Surface class used to identify treatment type based on 'ac', 'ogpa' or 'cs'. Currently , this maps:
+    /// 'slurry' to 'ac' for treatment purposes
+    /// 'unknown' to 'cs' for treatment purposes 
+    /// </summary>
+    public string SurfaceClassForTreatment
+    {
+        get
+        {
+            if (this.SurfaceClass == "slurry") return "ac";
+            if (this.SurfaceClass == "unknown") return "cs";
+            return this.SurfaceClass;
+        }
+    }
+
     public string SurfaceClassForRules
     {
         get
@@ -463,6 +478,57 @@ public class RoadSegmentMC
 
     #region Treatment Trigger Related
 
+    public double GetRehabilitationNeedsIndex(double rutThreshold)
+    {
+        //Pavement Distress Index plus excess rut. If rut is below threshold, then rehabilitation need is penalised.
+        return this.PavementDistressIndex + (this.RutMeanObserved - rutThreshold);
+    }
+
+    public double GetSurfaceTreatmentNeedsIndex(Constants constants)
+    {
+                        
+        //Surface Distress Index minus excess rut if any. If rut is below threshold, then excess rut is zero and does not increase the need for surface treatment.
+        //If rut is above threshold, then excess rut increases the need for surface treatment. 
+        double baseSNI = this.SurfaceDistressIndex - Math.Max(0,this.RutMeanObserved - constants.TSSExcessRutThresh);
+
+        if (this.SurfaceClass == "cs")
+        {
+            // Do not consider surface treatment if pavemet distress is above specified threshold
+            if (this.PavementDistressIndex > constants.TSSPreserveMaxPdiChipseal) return 0.0;
+
+            // Do not consider surface treatment if number of layers is above specified threshold (stability risk).
+            if (this.SurfaceNumberOfLayers > constants.MaxSealCountForChipSeal) return 0.0;
+
+            double lowTextureBooster = Math.Max(0, constants.TextureThresholdForChipSeal - this.TextureMeanObserved) * constants.TexturePenaltyFactorForChipSeal;
+
+            return Math.Max(0, baseSNI + lowTextureBooster);
+
+        }
+        else if (this.SurfaceClass == "ac" || this.SurfaceClass == "ogpa" || this.SurfaceClass == "slurry")
+        {
+            if (this.PavementDistressIndex > constants.TSSPreserveMaxPdiAC) return 0.0;
+            return Math.Max(0, baseSNI);
+        }
+        else
+        {
+            // For other surface classes, we do not have specific thresholds or adjustments, so we just return the base SNI if it is above zero, otherwise return zero.
+            return Math.Max(0, baseSNI);
+        }
+    }
+
+
+    /// <summary>
+    /// Percentage rank of the Rehabilitation Needs Index value for the segment compared to all other segments in the model. 
+    /// </summary>
+    public double RehabilitationNeedsIndexRank { get; set; } = 0;
+
+
+    /// <summary>
+    /// Percentage rank of the Surface Treatment Needs Index value for the segment compared to all other segments in the model. 
+    /// </summary>
+    public double SurfacingNeedsIndexRank { get; set; } = 0;
+
+
     /// <summary>
     /// Flag indicating if the segment should be considered at all as a candiate for treatment. This is not read from input data
     /// but set before calling the Treatments Trigger, based on condition, age etc.
@@ -530,7 +596,7 @@ public class RoadSegmentMC
     /// </summary>
     /// <param name="numModParamValues">Return value: Sink holding values for numeric parameters (to be updated by Domain Model). Keys are parameter names, values are assigned values</param>
     /// <param name="textModParamValues">Return value: Sink holding values for text parameters (to be updated by Domain Model). Keys are parameter names, values are assigned values</param>     
-    public void SetParameterValues(Action<string, double> numModParamValues, Action<string, string> textModParamValues)
+    public void SetParameterValues(Action<string, double> numModParamValues, Action<string, string> textModParamValues, Constants constants)
     {
         numModParamValues("par_adt", this.AverageDailyTraffic);
         numModParamValues("par_hcv", this.HeavyVehiclesPerDay);
@@ -562,6 +628,11 @@ public class RoadSegmentMC
         numModParamValues("par_text", this.TextureMeanLatent);
         numModParamValues("par_text_obs", this.TextureMeanObserved);
         numModParamValues("par_text_epi_len", this.TextureIncrementEpisodeLength);
+
+        numModParamValues("par_pdi", this.PavementDistressIndex);
+        numModParamValues("par_sdi", this.SurfaceDistressIndex);
+        numModParamValues("par_rni", this.GetRehabilitationNeedsIndex(constants.TSSExcessRutThresh));
+        numModParamValues("par_sni", this.GetSurfaceTreatmentNeedsIndex(constants));
 
         numModParamValues("par_maint_pa", this.MaintenancePavement);
         numModParamValues("par_maint_poth", this.MaintenancePotfill);

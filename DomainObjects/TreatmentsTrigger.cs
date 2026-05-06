@@ -31,11 +31,7 @@ public class TreatmentsTrigger
         // next treatment have now changed since the period has changed
         int periodsToNextTreatment = Convert.ToInt32(infoFromModel["periods_to_next_treatment"]);
         if (periodsToNextTreatment <= 6) { return triggeredTreatments; }
-
-        // Check if a birthday treatment should be added. If so, since we are forcing it, do not look for other candidate treatments
-        this.AddBirthdayTreatmentBlocksOrConcreteIfValid(segment, period, triggeredTreatments);
-        if (triggeredTreatments.Count > 0) return triggeredTreatments;
-
+        
         //---------------------------------------------------------------------------------------------------------------------------------
         //      If we get here, we know that no second coats or birthday treatments are added.
         //      Now find candidate treatments to add to the optimisation stage
@@ -45,26 +41,28 @@ public class TreatmentsTrigger
         {
             return TriggerChipseals.GetTriggeredChipsealTreatments(segment, period, _domainModel, _frameworkModel.Lookups);
         }
-        else
+        else if (TriggerAsphalts.NextSurfacingIsAsphaltic(segment))
         {
             // If we get here, the surfacing type should be 'ac' or 'ogpa'. Double check and throw an exception if not
-            if (segment.NextSurface != "ac" && segment.NextSurface != "ogpa")
+            if (segment.NextSurface != "ac" && segment.NextSurface != "ogpa" && segment.NextSurface != "slurry")
             {
                 throw new Exception($"Unexpected surfacing type for segment {segment.ElementIndex}. Expected 'ac' or 'ogpa', but got '{segment.NextSurface}'");
             }
 
             // Safe to get an AC or OGPA rehabilitation treatment
             return TriggerAsphalts.GetTriggeredAsphaltOrOgpaTreatments(segment, period, _frameworkModel, _domainModel, _frameworkModel.Lookups, infoFromModel);
-
+        }
+        else
+        {
+            return GetBirthdayTreatmentBlocksOrConcreteIfValid(segment, period);
         }
 
     }
         
-    private void AddBirthdayTreatmentBlocksOrConcreteIfValid(RoadSegmentMC segment, int iPeriod, List<TreatmentInstance> treatments)
+    private List<TreatmentInstance> GetBirthdayTreatmentBlocksOrConcreteIfValid(RoadSegmentMC segment, int iPeriod)
     {
-        //n : pcal_can_treat_flag = 1 AND n : pcal_next_surf_blocks_flag = 1 AND n : period >= file_earliest_treat_period AND n : para_surf_remain_life <= 1
-
-        if (segment.CanTreatFlag == 0) return; // If the segment cannot be treated, do not add a treatment
+        List<TreatmentInstance> treatments = new List<TreatmentInstance>();
+        
         string treatmentName = "";
 
         switch (segment.NextSurface)
@@ -80,19 +78,20 @@ public class TreatmentsTrigger
                 break;
             default:
                 //If we get here, it is ChipSeal or Asphalt, which are not valid for this treatment
-                return;
+                throw new Exception($"Unexpected NextSurface type for birthday treatment for segment {segment.ElementIndex}. Expected 'blocks', 'concrete', or 'other', but got '{segment.NextSurface}'");
         }
 
-        if (segment.SurfaceRemainingLife > 1) return; // If the surface remaining life is greater than 1, do not add a treatment
-        if (iPeriod < segment.EarliestTreatmentPeriod) return; // If the period is less than the earliest treatment period, do not add a treatment
+        if (segment.SurfaceRemainingLife > 1) return treatments; // If the surface remaining life is greater than 1, do not add a treatment
+        if (iPeriod < segment.EarliestTreatmentPeriod) return treatments; // If the period is less than the earliest treatment period, do not add a treatment
 
         //If we get here, a birthday treatment is valid
         double quantity = segment.AreaSquareMetre;
         bool forceTreatment = true;
         TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, quantity, forceTreatment,  "Birthday treatment", "");
         treatment.TreatmentSuitabilityScore = 102; // Set a high suitability score for second coat treatments
+        
         treatments.Add(treatment);
-
+        return treatments;
     }
    
 

@@ -177,9 +177,7 @@ public class SubModelDefinitions
     #endregion
 
     #region Treatment Suitability Score Models
-
-    public PieceWiseLinearModel TSSForPreservationTreatment { get; set; } = null;
-
+    
     public PieceWiseLinearModel TSSForHoldingAction { get; set; } = null;
 
     public PieceWiseLinearModel TSSForRehabilitation { get; set; } = null;

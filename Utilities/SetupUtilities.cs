@@ -165,17 +165,13 @@ public static class SetupUtilities
     }
 
     public static void SetupTreatmentSuitabilityScoreModels(DomainObjects.MonteCarloRoadModelV1 domainModel)
-    {
-        string tssModelSetup = $"{domainModel.Constants.TSSPreserveSdiRank},0|100,100";
-        domainModel.SubModels.TSSForPreservationTreatment = new PieceWiseLinearModel(tssModelSetup, true);
-
-        double excessRutThreshold = domainModel.Constants.TSSRehabExcessRutThresh;
-        double rutPenaltyFactor = domainModel.Constants.TSSRehabExcessRutFact;
-        
-        tssModelSetup = $"{domainModel.Constants.TSSRehabPdiRank},0|100,100";
+    {        
+        double excessRutThreshold = domainModel.Constants.TSSExcessRutThresh;
+                
+        string tssModelSetup = $"{domainModel.Constants.TSSRehabRniRank},0|100,100";
         domainModel.SubModels.TSSForRehabilitation = new PieceWiseLinearModel(tssModelSetup, true);  //Previous model did not extrapolate - I think this is better for breaking ties
 
-        tssModelSetup = $"{domainModel.Constants.TSSHoldingPdiRankPt1},0|{domainModel.Constants.TSSHoldingPdiRankPt2},100 | 100,{domainModel.Constants.TSSHoldingPdiRankPt3}";
+        tssModelSetup = $"{domainModel.Constants.TSSHoldingRniRankPt1},0|{domainModel.Constants.TSSHoldingRniRankPt2},100 | 100,{domainModel.Constants.TSSHoldingRniRankPt3}";
         domainModel.SubModels.TSSForHoldingAction = new PieceWiseLinearModel(tssModelSetup, true);
 
     }

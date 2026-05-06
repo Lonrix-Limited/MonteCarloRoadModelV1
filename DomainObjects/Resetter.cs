@@ -55,6 +55,7 @@ public class Resetter
         // Update surfacing age, class, material, thickness, function, expected life based on the treatment being applied. 
         UpdateSurfacingPropertiesForTreatment(segment, treatment);
 
+        UpdateFlagsForTreatment(segment, treatment);
 
         //--------------------------------------------------------------------------------------------------------------------------------------------
         // HSD Increments. When treatment is applied, always draw a new increment for the episode
@@ -91,6 +92,19 @@ public class Resetter
 
         return segment;
     }
+
+    #region Other Properties Reset
+
+    private void UpdateFlagsForTreatment(RoadSegmentMC segment, TreatmentInstance treatment)
+    {
+        // Update any flags or categorical variables based on the treatment. For example, if the treatment is a rehab, we might want to reset the "MaintenancePavement" variable to 0 since the rehab would have addressed the maintenance issues on the pavement. 
+        if (treatment.TreatmentName.ToLower().Contains("rehab"))
+        {
+            segment.CanDoThinACOverlay = 1; // After a rehab treatment, the segment can receive a thin AC overlay in the future
+        }
+    }
+
+    #endregion
 
     #region Surfacing Properties Reset
 

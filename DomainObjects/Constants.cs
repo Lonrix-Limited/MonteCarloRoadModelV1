@@ -1,4 +1,5 @@
 ﻿
+using System.Runtime.CompilerServices;
 using JCass_Core.Statistics;
 
 namespace MonteCarloRoadModelV1.DomainObjects;
@@ -12,8 +13,7 @@ public class Constants
     #region Backing Variables
 
     private DateTime _baseDate; 
-    private int _shortTermPeriod;
-
+    
     // Related to Candidate Selection
     private double _minSlaToTreatAc;
     private double _minSlaToTreatCs;    
@@ -22,28 +22,20 @@ public class Constants
     private double _min_pdi_to_treat;
 
 
-    private double _potholeBoostFactor;
-
-    private double _maintenanceCostCalibrationFactor;
-    private double _maintenanceCostPDIThreshold;
-
     // Related to TSS (Treatment Suitability Scores - MCDA)
-    private double _rehabExcessRutThresh;
-    private double _rehabExcessRutFact;
-    private double _rehabPdiRank;
-    private double _holdingPdiRankPt1;
-    private double _holdingPdiRankPt2;
-    private double _holdingPdiRankPt3;
-    private double _holdingMaxRut;
-
-    private double _preserveSdiRank;
-
+    private double _excessRutThreshold;    
+    private double _rehabMinRniRank;
+    private double _holdingRniRankPt1;
+    private double _holdingRniRankPt2;
+    private double _holdingRniRankPt3;
+        
     private double _preserveMaxPdiChipSeal;
     private double _preserveMaxPdiAC;
     private double _holdingMaxPdiAC;
 
-    private double _preserveMaxRut;    
-    private double _preserveMinSla;           
+    private double _csMaxSealCount;
+    private double _csTextureThreshold;
+    private double _csTextureFactor;  
 
     // Related to MCDA Treatment Triggering
     private double _maxSlaForACHeavyMaint;
@@ -65,14 +57,7 @@ public class Constants
 
     #region Candidate Selection related constants
 
-    /// <summary>
-    /// Number of modelling periods considered short term for purposes of trigger adjustment. Used in Candidate Selection.
-    /// </summary>
-    public int CSShortTermPeriod
-    {
-        get { return _shortTermPeriod; }     
-    }
-    
+        
     /// <summary>
     /// Minimum Surface Life Achieved to consider for AC - gatekeeper that can be used to throttle treatments
     /// </summary>
@@ -119,71 +104,48 @@ public class Constants
     #region Treatment Selection MCDA
 
     /// <summary>
-    /// Rut threshold above which a penalty(for Holding Actions) or boost(for Rehabs) is applied(see below)
+    /// Rut threshold above which a penalty(for Preservation/Holding Actions) or Boost(for Rehabs) is applied
     /// </summary>
-    public double TSSRehabExcessRutThresh
+    public double TSSExcessRutThresh
     {
-        get { return _rehabExcessRutThresh; }
-    }
-
-    /// <summary>
-    /// Multiply excessive rut with this value to get the boost for Rehab TSS based on excessive rut(if any)
-    /// </summary>
-    public double TSSRehabExcessRutFact
-    {
-        get { return _rehabExcessRutFact; }
-    }
-
-    /// <summary>
-    /// PDI rank below which TSS score for Rehab becomes zero (i.e. no rehab if PDI is below this value)
-    /// </summary>
-    public double TSSRehabPdiRank
-    {
-        get { return _rehabPdiRank; }
-    }
-
-    /// <summary>
-    /// PDI rank below which TSS score for Holding Action becomes zero (i.e. no holding action if PDI is below this value)
-    /// </summary>
-    public double TSSHoldingPdiRankPt1
-    {
-        get { return _holdingPdiRankPt1; }
-    }
-
-
-    /// <summary>
-    /// PDI rank at which score for holding action is maximal(100)
-    /// </summary>
-    public double TSSHoldingPdiRankPt2
-    {
-        get { return _holdingPdiRankPt2; }
+        get { return _excessRutThreshold; }
     }
     
     /// <summary>
-    /// TSS for holding action based on PDI when PDI rank is 100
+    /// RNI rank below which TSS score for Rehab becomes zero (i.e. no rehab if RNI is below this value)
     /// </summary>
-    public double TSSHoldingPdiRankPt3
+    public double TSSRehabRniRank
     {
-        get { return _holdingPdiRankPt3; }
+        get { return _rehabMinRniRank; }
     }
 
     /// <summary>
-    /// Do not consider holding action if rut is above this value (unless it is not a rehab route in which case it is ignored)
+    /// RNI rank below which TSS score for Holding Action becomes zero (i.e. no holding action if RNI is below this value)
     /// </summary>
-    public double TSSHoldingMaxRut
+    public double TSSHoldingRniRankPt1  
     {
-        get { return _holdingMaxRut; }
+        get { return _holdingRniRankPt1; }
     }
 
+
+    /// <summary>
+    /// RNI rank at which score for holding action is maximal(100)
+    /// </summary>
+    public double TSSHoldingRniRankPt2
+    {
+        get { return _holdingRniRankPt2; }
+    }
     
     /// <summary>
-    /// SDI Rank below which score for Preservation becomes zero (we want to apply preservation where there is some surface distress)
+    /// TSS for holding action based on RNI when RNI rank is 100
     /// </summary>
-    public double TSSPreserveSdiRank
+    public double TSSHoldingRniRankPt3
     {
-        get { return _preserveSdiRank; }
+        get { return _holdingRniRankPt3; }
     }
+
         
+            
     /// <summary>
     /// Do not consider Preservation ChipSeal treatment if PDI is above this value 
     /// </summary>
@@ -209,20 +171,31 @@ public class Constants
     }
 
     /// <summary>
-    /// Do not consider preservation if rut is above this value
+    /// Maximum number of previous seals for a ChipSeal treatment to be considered (stability concern if too many seals already). 
+    /// Set this to a high value to effectively have no maximum.
     /// </summary>
-    public double TSSPreserveMaxRut
+    public double MaxSealCountForChipSeal
     {
-        get { return _preserveMaxRut; }
+        get { return _csMaxSealCount; }
     }
 
     /// <summary>
-    /// Do not consider preservation if Surface Life Achieved % is below this value
+    /// Texture threshold below which Surface Needs index for a Chipseal is increased since it points to flushing risk
     /// </summary>
-    public double TSSPreserveMinSla
+    public double TextureThresholdForChipSeal
     {
-        get { return _preserveMinSla; }
+        get { return _csTextureThreshold; }
     }
+
+    /// <summary>
+    /// Multiplier for Surface Needs Index for a Chipseal when Texture is below the threshold, to account for increased risk of flushing. 
+    /// Only has an influence if texture if below the TextureThresholdForChipSeal threshold. Set this to zero to have no increase in Surface Needs Index due to low texture. 
+    /// </summary>
+    public double TexturePenaltyFactorForChipSeal
+    {
+        get { return _csTextureFactor; }
+    }
+
 
     /// <summary>
     /// Maximum Surface Life Achieved % to consider AC Heavy Maintenance (i.e. do not consider AC Heavy Maintenance if SLA is above this value)
@@ -504,8 +477,7 @@ public class Constants
     public Constants(Dictionary<string, Dictionary<string, object>> lookupSets)
     {        
         _baseDate = JCass_Core.Utils.HelperMethods.ParseDateNoTime(lookupSets["general"]["base_date"]);
-        _shortTermPeriod = Convert.ToInt32(lookupSets["general"]["short_term_periods"]);
-
+        
         // Candidate Selection related constants
         _min_periods_to_next_treat = Convert.ToInt32(lookupSets["candidate_selection"]["min_periods_to_next_treat"]);
         _min_sdi_to_treat = Convert.ToDouble(lookupSets["candidate_selection"]["min_sdi_to_treat"]);
@@ -513,25 +485,21 @@ public class Constants
         _minSlaToTreatAc = Convert.ToDouble(lookupSets["candidate_selection"]["min_sla_to_treat_ac"]);
         _minSlaToTreatCs = Convert.ToDouble(lookupSets["candidate_selection"]["min_sla_to_treat_cs"]);
                
-        _maintenanceCostCalibrationFactor = Convert.ToDouble(lookupSets["maint_pred"]["cal_maint_pred"]);
-        _maintenanceCostPDIThreshold = Convert.ToDouble(lookupSets["maint_pred"]["maint_pdi_threshold"]);
-
-        // Related to TSS
-        _rehabExcessRutThresh = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["rehab_excess_rut_thresh"]);
-        _rehabExcessRutFact = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["rehab_excess_rut_fact"]);
-        _rehabPdiRank = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["rehab_pdi_rank"]);
-        _holdingPdiRankPt1 = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["holding_pdi_rank_pt1"]);
-        _holdingPdiRankPt2 = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["holding_pdi_rank_pt2"]);
-        _holdingPdiRankPt3 = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["holding_pdi_rank_pt3"]);
-        _holdingMaxRut = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["holding_max_rut"]);
-        _preserveSdiRank = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["preserve_sdi_rank"]);
         
+        // Related to TSS
+        _excessRutThreshold = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["excess_rut_threshold"]);        
+        _rehabMinRniRank = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["rehab_min_rni_rank"]);
+        _holdingRniRankPt1 = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["holding_rni_rank_pt1"]);
+        _holdingRniRankPt2 = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["holding_rni_rank_pt2"]);
+        _holdingRniRankPt3 = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["holding_rni_rank_pt3"]);
+                
         _preserveMaxPdiChipSeal = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["preserve_max_pdi_chipseal"]);
         _preserveMaxPdiAC = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["preserve_max_pdi_ac"]);
         _holdingMaxPdiAC = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["holding_max_pdi_ac"]);
 
-        _preserveMaxRut = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["preserve_max_rut"]);
-        _preserveMinSla = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["preserve_min_sla"]);
+        _csMaxSealCount = Convert.ToInt32(lookupSets["treatment_suitability_scores"]["cs_max_seal_count"]);
+        _csTextureThreshold = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["cs_texture_threshold"]);
+        _csTextureFactor = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["cs_texture_penalty_factor"]);
 
         // Related to MCDA Treatment Triggering
         _maxSlaForACHeavyMaint = Convert.ToDouble(lookupSets["mcda_treatment_triggering"]["ac_hmaint_maximum_sla"]);

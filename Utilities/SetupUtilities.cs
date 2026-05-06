@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using DocumentFormat.OpenXml.Packaging;
+using JCass_Core.JFunctions;
 using JCass_Core.Statistics;
 using JCass_Data.Objects;
 using JCass_Data.Utils;
 using JCass_ModelCore.MonteCarlo;
+using MonteCarloRoadModelV1.DomainObjects;
 
 namespace MonteCarloRoadModelV1.Utilities;
 
@@ -161,7 +164,21 @@ public static class SetupUtilities
 
     }
 
+    public static void SetupTreatmentSuitabilityScoreModels(DomainObjects.MonteCarloRoadModelV1 domainModel)
+    {
+        string tssModelSetup = $"{domainModel.Constants.TSSPreserveSdiRank},0|100,100";
+        domainModel.SubModels.TSSForPreservationTreatment = new PieceWiseLinearModel(tssModelSetup, true);
 
+        double excessRutThreshold = domainModel.Constants.TSSRehabExcessRutThresh;
+        double rutPenaltyFactor = domainModel.Constants.TSSRehabExcessRutFact;
+        
+        tssModelSetup = $"{domainModel.Constants.TSSRehabPdiRank},0|100,100";
+        domainModel.SubModels.TSSForRehabilitation = new PieceWiseLinearModel(tssModelSetup, true);  //Previous model did not extrapolate - I think this is better for breaking ties
+
+        tssModelSetup = $"{domainModel.Constants.TSSHoldingPdiRankPt1},0|{domainModel.Constants.TSSHoldingPdiRankPt2},100 | 100,{domainModel.Constants.TSSHoldingPdiRankPt3}";
+        domainModel.SubModels.TSSForHoldingAction = new PieceWiseLinearModel(tssModelSetup, true);
+
+    }
 
     private static jcDataSet GetFilteredDataSet(string parameterName, jcDataSet allSetups)
     {

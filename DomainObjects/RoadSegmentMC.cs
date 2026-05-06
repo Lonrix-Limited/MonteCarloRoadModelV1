@@ -1,4 +1,5 @@
 ﻿
+using DocumentFormat.OpenXml.Office.CoverPageProps;
 using JCass_ModelCore.Models;
 
 namespace MonteCarloRoadModelV1.DomainObjects;
@@ -116,18 +117,6 @@ public class RoadSegmentMC
         }
     }
 
-
-    /// <summary>
-    /// Flag indicating if the surface is a chip seal. This is calculated based on the SurfaceClass property.
-    /// </summary>
-    public int SurfaceIsChipSealFlag
-    {
-        get
-        {
-            // Return 1 if the surface class is 'cs' (chip seal), otherwise return 0.
-            return this.SurfaceClass == "cs" ? 1 : 0;
-        }
-    }
 
     /// <summary>
     /// Flag indicating if the surface is either chip seal or asphalt concrete. This is calculated based on the SurfaceClass property.
@@ -428,6 +417,108 @@ public class RoadSegmentMC
     /// Extent of Pothole Filling Routine Maintenance, as fraction of total length (value 0 to 1), triggered in the period. 
     /// </summary>
     public double MaintenancePotfill { get; set; }
+
+
+    #endregion
+
+    #region Distress Indexes and Latent Damage
+
+    /// <summary>
+    /// Pavement Distress Index initialised from 'inp_pdi'
+    /// </summary>
+    public double PavementDistressIndex { get; set; } = 0;
+
+
+    /// <summary>
+    /// Percentage rank of the Pavement Distress Index value for the segment compared to all other segments in the model. This is
+    /// used for treatment triggers and prioritisation, to allow to compare the PDI value of a segment with the
+    /// distribution of PDI values across the network, rather than just looking at the absolute PDI value. This allows to better
+    /// identify the worst segments in terms of PDI and trigger treatments based on that, rather than just looking at absolute PDI
+    /// thresholds which may not be as effective in identifying the worst segments if the distribution of PDI values is skewed or has outliers.
+    /// </summary>
+    public double PavementDistressIndexRank { get; set; } = 0;
+
+
+    /// <summary>
+    /// Surfacing Distress Index initialised from 'inp_sdi'
+    /// </summary>
+    public double SurfaceDistressIndex { get; set; } = 0;
+
+    /// <summary>
+    /// Percentage rank of the Surface Distress Index value for the segment compared to all other segments in the model.
+    /// This is used for treatment triggers and prioritisation, to allow to compare the SDI value of a segment with the
+    /// distribution of SDI values across the network, rather than just looking at the absolute SDI value. This allows to better 
+    /// identify the worst segments in terms of SDI and trigger treatments based on that, rather than just looking at absolute SDI 
+    /// thresholds which may not be as effective in identifying the worst segments if the distribution of SDI values is skewed or has outliers. 
+    /// This is calculated at each period based on the current SDI values of all segments in the model.
+    /// </summary>
+    public double SurfaceDistressIndexRank { get; set; } = 0;
+
+    /// <summary>
+    /// Latent Damage caused by distress. Unlike PDI and SDI, this is only fully reset by a Rehabilitation
+    /// </summary>
+    public double LatentDamage { get; set; } = 0;
+
+    #endregion
+
+    #region Treatment Trigger Related
+
+    /// <summary>
+    /// Flag indicating if the segment should be considered at all as a candiate for treatment. This is not read from input data
+    /// but set before calling the Treatments Trigger, based on condition, age etc.
+    /// </summary>
+    public int IsCandidateForTreatment { get; set; } = 1; // Default to 1 (is candidate) if not specified in input data
+
+    /// <summary>
+    /// Flag set from input data indicating if a segment can be treated or not. This can be set based on client-specific
+    /// rules or constraints, and is used to filter out segments that should not be considered for treatment in the model. 
+    /// This flag is set during initialisation based on input data column 'inp_can_treat_flag' and it not modified during the model run.
+    /// </summary>
+    public int CanTreatFlag { get; set; } = 1; // Default to 1 (can treat) if not specified in input data
+
+    /// <summary>
+    /// Flag to indicate if a thin asphalt overlay can be considered on this pavement. This flag is read from input data column 'inp_thin_ac_ok_flag' and can 
+    /// be used to filter out segments that should not be considered for asphalt overlay treatments in the model, based on client-specific rules or constraints
+    /// such as too high deflection curvature etc.
+    /// </summary>
+    public int CanDoThinACOverlay { get; set; } = 1; // Default to 1 (asphalt is ok) if not specified in input data
+
+    /// <summary>
+    /// Flag to indicate if the segment can be considered for Rehabilitation. This is set based on input data column 'inp_can_rehab_flag' and can be used 
+    /// to filter out segments that should not be considered for rehabilitation treatments in the model, based on client-specific rules or constraints. 
+    /// This allows to prevent rehabilitation treatments from being triggered for certain segments if this is not realistic or desired. 
+    /// Needs to be set explicitly during pre-processing.
+    /// </summary>
+    public int CanRehabFlag { get; set; } = 1; // Default to 1 (can rehabilitate) if not specified in input data
+
+    /// <summary>
+    /// Code for the next surface to be applied. This is set based on input data column 'inp_next_surf' and can be used to 
+    /// switch surface type e.g. from Chipseal to Asphalt Concrete based on client-specific rules or constraints. Needs to
+    /// be set explicitly during pre-processing. 
+    /// </summary>
+    public string NextSurface { get; set; } = "cs"; // Default to 'cs' (chip seal) if not specified in input data
+      
+
+    /// <summary>
+    /// Earliest treatment period. This is set based on input data column 'inp_earliest_treat_period' and can be used to specify the 
+    /// earliest period in which a treatment can be triggered for the segment, based on client-specific rules or constraints. 
+    /// This allows to prevent treatments from being triggered in the first periods of the model run if this is not realistic or desired. 
+    /// Needs to be set explicitly during pre-processing.
+    /// </summary>
+    public int EarliestTreatmentPeriod { get; set; } = 0; // Default to 0 (treatment can be triggered from first period) if not specified in input data
+
+    
+    /// <summary>
+    /// Checks if a second coat is needed now based on the surface function. If surface function is "1" or "1a" then
+    /// a second coat is needed, otherwise it is not. 
+    /// </summary>
+    public bool SecondCoatNeeded
+    {
+        get
+        {
+            return this.SurfaceFunction == "1" || this.SurfaceFunction == "1a";
+        }
+    }
 
 
     #endregion

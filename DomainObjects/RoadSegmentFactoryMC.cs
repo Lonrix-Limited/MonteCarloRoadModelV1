@@ -70,10 +70,21 @@ public static class RoadSegmentFactoryMC
         segment.TextureIncrement = Math.Min(-0.01, model.GetInputDataNumber(segment.ElementIndex, "inp_text_rate"));
         segment.TextureIncrementEpisodeLength = 1; // Initially 1
 
+        // Pavement and Surface Distress Indices
+        segment.PavementDistressIndex = model.GetInputDataNumber(segment.ElementIndex, "inp_pdi");
+        segment.SurfaceDistressIndex = model.GetInputDataNumber(segment.ElementIndex, "inp_sdi");
+
         // Routine Maintenance 
         segment.MaintenancePavement = model.GetInputDataNumber(segment.ElementIndex, "inp_maint_pa_ext");
         segment.MaintenancePotfill = model.GetInputDataNumber(segment.ElementIndex, "inp_maint_poth_ext");
 
+        // Treatment Triggering Flags
+        segment.CanTreatFlag = Convert.ToInt32(model.GetInputDataNumber(segment.ElementIndex, "inp_can_treat_flag"));        
+        segment.CanDoThinACOverlay = Convert.ToInt32(model.GetInputDataNumber(segment.ElementIndex, "inp_thin_ac_ok_flag"));
+        segment.CanRehabFlag = Convert.ToInt32(model.GetInputDataNumber(segment.ElementIndex, "inp_can_rehab_flag"));
+
+        segment.EarliestTreatmentPeriod = Convert.ToInt32(model.GetInputDataNumber(segment.ElementIndex, "inp_earliest_treat_period"));
+        segment.NextSurface = model.GetInputDataText(segment.ElementIndex, "inp_next_surf").ToLower();
 
         return segment;
     }

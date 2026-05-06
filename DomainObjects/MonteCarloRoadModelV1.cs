@@ -51,8 +51,7 @@ public class MonteCarloRoadModelV1 : DomainModelBase
             this.SubModels = new SubModelDefinitions(model.RandomSeed);
 
             this.Constants = new Constants(this.model.Lookups);
-            //this.SetupDistressModels();
-
+            
             string workFolder = model.Configuration.WorkFolder;
 
             // Set up the distribution simulators for the increments for Rut, IRI and Texture
@@ -232,10 +231,10 @@ public class MonteCarloRoadModelV1 : DomainModelBase
 
             Dictionary<string, object> infoFromModel = model.GetSpecialPlaceholderValues(iElemIndex, iPeriod, null);
 
-            //RoadSegmentMC segment = RoadSegmentMCFactory.GetFromModel(this.model, numInputs, textInputs, numModParamValues, textModParamValues, iElemIndex, iPeriod);            
-            
-            //TreatmentsTrigger mcdaTriggerFunction = new TreatmentsTrigger(this.model, this);
-            //List<TreatmentInstance> candidates = mcdaTriggerFunction.GetTriggeredTreatments(segment, iPeriod, infoFromModel);
+            RoadSegmentMC segment = RoadSegmentFactoryMC.GetFromModel(this.model, numInputs, textInputs, numModParamValues, textModParamValues, iElemIndex, iPeriod);
+
+            TreatmentsTrigger mcdaTriggerFunction = new TreatmentsTrigger(this.model, this);
+            List<TreatmentInstance> candidates = mcdaTriggerFunction.GetTriggeredTreatments(segment, iPeriod, infoFromModel);
 
             //return candidates;
             return new List<TreatmentInstance>();

@@ -15,17 +15,17 @@ public class MonteCarloRoadModelV1 : DomainModelBase
 
     #region Variables and Submodels
 
-    public Constants Constants { get; set; }
+    public Constants Constants { get; set; } = null!;
 
-    private Initialiser _initialiser;
+    private Initialiser _initialiser = null!;
 
-    private Incrementer _incrementer;
+    private Incrementer _incrementer = null!;
 
-    private Resetter _resetter;
+    private Resetter _resetter = null!;
 
-    public SubModelDefinitions SubModels { get; set; }
+    public SubModelDefinitions SubModels { get; set; } = null!;
 
-    public RoutineMaintenanceModeller MaintenanceModel;
+    public RoutineMaintenanceModeller MaintenanceModel = null!;
     
     #endregion
 
@@ -96,10 +96,12 @@ public class MonteCarloRoadModelV1 : DomainModelBase
     {
         try
         {
+#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
             if (iElemIndex == 8426)
             {
                 int kk = 9;
             }
+#pragma warning restore CS0219
 
             Dictionary<string, object> infoFromModel = model.GetSpecialPlaceholderValues(iElemIndex, 0);
             RoadSegmentMC segment = _initialiser.InitialiseSegment(iElemIndex);
@@ -138,11 +140,13 @@ public class MonteCarloRoadModelV1 : DomainModelBase
     {
         try
         {
+#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
             if (iElemIndex == 456)
             {
                 int kk = 9;
             }
-            
+#pragma warning restore CS0219
+
             //var (numPrevValues, textPrevValues) = model.GetParameterValues(iElemIndex, iPeriod - 1);
 
             Dictionary<string, object> infoFromModel = model.GetSpecialPlaceholderValues(iElemIndex, iPeriod, treatment);
@@ -181,10 +185,12 @@ public class MonteCarloRoadModelV1 : DomainModelBase
     {
         try
         {
+#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
             if (iElemIndex == 89 && iPeriod == 1)
             {
                 int kk = 9;
             }
+#pragma warning restore CS0219
 
             //var (numPrevValues, textPrevValues) = model.GetParameterValues(iElemIndex, iPeriod - 1);
 
@@ -226,10 +232,12 @@ public class MonteCarloRoadModelV1 : DomainModelBase
     {
         try
         {
+#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
             if (iElemIndex == 3 && iPeriod == 32)
             {
                 int kk = 0;
             }
+#pragma warning restore CS0219
 
             Dictionary<string, object> infoFromModel = model.GetSpecialPlaceholderValues(iElemIndex, iPeriod, null);
 
@@ -238,9 +246,7 @@ public class MonteCarloRoadModelV1 : DomainModelBase
             TreatmentsTrigger mcdaTriggerFunction = new TreatmentsTrigger(this.model, this);
             List<TreatmentInstance> candidates = mcdaTriggerFunction.GetTriggeredTreatments(segment, iPeriod, infoFromModel);
 
-            //return candidates;
-            return new List<TreatmentInstance>();
-
+            return candidates;            
         }
         catch (Exception ex)
         {
@@ -271,7 +277,8 @@ public class MonteCarloRoadModelV1 : DomainModelBase
             //segment.UpdateFormulaValues(this.model, this, iPeriod, infoFromModel);  //Immediately update the formula values for the segment
 
             //return RoutineMaintenance.GetRoutineMaintenance(segment, iPeriod);
-            return null;
+            // Base signature is non-nullable, but framework null-checks; suppress with null-forgiving.
+            return null!;
 
         }
         catch (Exception ex)

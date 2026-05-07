@@ -27,9 +27,9 @@ public class SubModelDefinitions
     #region Increment Simulators and Residual SD Functions
 
     /// <summary>
-    /// Simulator for Rut Depth Increment. 
+    /// Simulator for Rut Depth Increment.
     /// </summary>
-    public DistributionSimulator RutIncrementSimulator { get; set; }
+    public DistributionSimulator RutIncrementSimulator { get; set; } = null!;
 
     /// <summary>
     /// Alternative model for Rut increment prediction, using a Linear Regression model instead of a distribution simulator. 
@@ -39,7 +39,7 @@ public class SubModelDefinitions
     /// <summary>
     /// Simulator for IRI Increment.
     /// </summary>
-    public DistributionSimulator IRIIncrementSimulator { get; set; }
+    public DistributionSimulator IRIIncrementSimulator { get; set; } = null!;
 
     /// <summary>
     /// Alternative model for IRI increment prediction, using a Linear Regression model instead of a distribution simulator.
@@ -49,26 +49,26 @@ public class SubModelDefinitions
     /// <summary>
     /// Simulator for Texture Increment.
     /// </summary>
-    public DistributionSimulator TextureIncrementSimulator { get; set; }
+    public DistributionSimulator TextureIncrementSimulator { get; set; } = null!;
 
 
     /// <summary>
     /// Piecewise Linear function to calculate the Standard Deviation of the Rut Increment residual as a function of the current rut depth.
     /// Function generally gives higher SD values for higher rut depths, to reflect the higher variability in rut increment as rut depth increases. 
     /// </summary>
-    public PieceWiseLinearModel RutIncrementResidualSDFunction { get; set; }
+    public PieceWiseLinearModel RutIncrementResidualSDFunction { get; set; } = null!;
 
 
     /// <summary>
     /// Piecewise Linear function to calculate the Standard Deviation of the IRI Increment residual as a function of the current IRI value.
     /// </summary>
-    public PieceWiseLinearModel IRIIncrementResidualSDFunction { get; set; }
+    public PieceWiseLinearModel IRIIncrementResidualSDFunction { get; set; } = null!;
 
 
     /// <summary>
     /// Piecewise Linear function to calculate the Standard Deviation of the Texture Increment residual as a function of the current texture value.
     /// </summary>
-    public PieceWiseLinearModel TextureIncrementResidualSDFunction { get; set; }
+    public PieceWiseLinearModel TextureIncrementResidualSDFunction { get; set; } = null!;
 
     #endregion
 
@@ -79,7 +79,7 @@ public class SubModelDefinitions
     /// read at startup from CSV file exported with R script. This CSV should have columns 'term' and 'estimate' where 
     /// 'term' is the name of the coefficient (e.g. '(Intercept)', 'IRI', 'Rut', etc) and 'estimate' is the value of the coefficient. 
     /// </summary>
-    public JCass_Core.Statistics.LogisticModel PotfillProbabilityModelAC { get; set; }
+    public JCass_Core.Statistics.LogisticModel PotfillProbabilityModelAC { get; set; } = null!;
 
 
     /// <summary>
@@ -87,7 +87,7 @@ public class SubModelDefinitions
     /// read at startup from CSV file exported with R script. This CSV should have columns 'term' and 'estimate' where 
     /// 'term' is the name of the coefficient (e.g. '(Intercept)', 'IRI', 'Rut', etc) and 'estimate' is the value of the coefficient. 
     /// </summary>
-    public JCass_Core.Statistics.LogisticModel PotfillProbabilityModelCS { get; set; }
+    public JCass_Core.Statistics.LogisticModel PotfillProbabilityModelCS { get; set; } = null!;
 
 
     /// <summary>
@@ -95,7 +95,7 @@ public class SubModelDefinitions
     /// read at startup from CSV file exported with R script. This CSV should have columns 'term' and 'estimate' where 
     /// 'term' is the name of the coefficient (e.g. '(Intercept)', 'IRI', 'Rut', etc) and 'estimate' is the value of the coefficient. 
     /// </summary>
-    public JCass_Core.Statistics.LogisticModel MaintPaProbabilityModelAC { get; set; }
+    public JCass_Core.Statistics.LogisticModel MaintPaProbabilityModelAC { get; set; } = null!;
 
 
     /// <summary>
@@ -103,18 +103,18 @@ public class SubModelDefinitions
     /// read at startup from CSV file exported with R script. This CSV should have columns 'term' and 'estimate' where 
     /// 'term' is the name of the coefficient (e.g. '(Intercept)', 'IRI', 'Rut', etc) and 'estimate' is the value of the coefficient. 
     /// </summary>
-    public JCass_Core.Statistics.LogisticModel MaintPaProbabilityModelCS { get; set; }
+    public JCass_Core.Statistics.LogisticModel MaintPaProbabilityModelCS { get; set; } = null!;
 
 
     /// <summary>
     /// Simulator for assigning a random Extent of PA maintenance (excluding Pothole filling) when it is triggered
     /// </summary>
-    public DistributionSimulator MaintenanceExtentPA { get; set; }
-    
+    public DistributionSimulator MaintenanceExtentPA { get; set; } = null!;
+
     /// <summary>
     /// Simulator for assigning a random Extent of Pothole Filling maintenance when it is triggered
     /// </summary>
-    public DistributionSimulator MaintenanceExtentPotfill { get; set; }
+    public DistributionSimulator MaintenanceExtentPotfill { get; set; } = null!;
 
     
     #endregion
@@ -124,28 +124,28 @@ public class SubModelDefinitions
     /// <summary>
     /// Simulator for Rut Depth Reset (value after treatment) for Resurfacings
     /// </summary>
-    public DistributionSimulator RutResetSimulatorResurf { get; set; }
+    public DistributionSimulator RutResetSimulatorResurf { get; set; } = null!;
 
     /// <summary>
     /// Simulator for Rut Depth Reset (value after treatment) for Rehabilitations
     /// </summary>
-    public DistributionSimulator RutResetSimulatorRehab { get; set; }
+    public DistributionSimulator RutResetSimulatorRehab { get; set; } = null!;
 
     /// <summary>
     /// Simulator for IRI Reset (value after treatment) for Resurfacings
     /// </summary>
-    public DistributionSimulator IRIResetSimulatorResurf { get; set; }
+    public DistributionSimulator IRIResetSimulatorResurf { get; set; } = null!;
 
     /// <summary>
     /// Simulator for IRI Reset (value after treatment) for Rehabilitations
     /// </summary>
-    public DistributionSimulator IRIResetSimulatorRehab { get; set; }
+    public DistributionSimulator IRIResetSimulatorRehab { get; set; } = null!;
 
     
     /// <summary>
     /// Simulator for Texture Depth Reset (value after treatment) for ALL Treatments and Surfacing types.
     /// </summary>
-    public DistributionSimulator TextureResetSimulator { get; set; }
+    public DistributionSimulator TextureResetSimulator { get; set; } = null!;
 
     
     #endregion
@@ -156,13 +156,13 @@ public class SubModelDefinitions
     /// Simulator for the reduction in Rut Depth (not reset value, but reduction in the current value) after PA maintenance 
     /// (excluding pothole filling), based on the extent of maintenance. 
     /// </summary>
-    public DistributionSimulator RutReductionAfterPaMaintenanceSimulator { get; set; }
+    public DistributionSimulator RutReductionAfterPaMaintenanceSimulator { get; set; } = null!;
 
     /// <summary>
     /// Simulator for the reduction in IRI (not reset value, but reduction in the current value) after PA maintenance 
     /// (excluding pothole filling), based on the extent of maintenance. 
     /// </summary>
-    public DistributionSimulator IRIReductionAfterPaMaintenanceSimulator { get; set; }
+    public DistributionSimulator IRIReductionAfterPaMaintenanceSimulator { get; set; } = null!;
 
     #endregion
 
@@ -178,9 +178,9 @@ public class SubModelDefinitions
 
     #region Treatment Suitability Score Models
     
-    public PieceWiseLinearModel TSSForHoldingAction { get; set; } = null;
+    public PieceWiseLinearModel TSSForHoldingAction { get; set; } = null!;
 
-    public PieceWiseLinearModel TSSForRehabilitation { get; set; } = null;
+    public PieceWiseLinearModel TSSForRehabilitation { get; set; } = null!;
 
     #endregion
 

@@ -18,16 +18,24 @@ public static class TriggerChipseals
         {
             List<TreatmentInstance> triggeredTreatments = new List<TreatmentInstance>();
 
-            if (segment.ElementIndex == 3)
+#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
+            if (segment.ElementIndex == 44)
             {
-                               int debug = 0;
+              int debug = 0;
             }
+#pragma warning restore CS0219
 
             // If we are triggering a ChipSeal treatment, then we need to check if a second coat after Rehabilitation or a follow-up chipseal after Preseal Repairs should be added.
             // Check if second coat after Rehabilitation should be added. If so, since we are forcing it, do not look
             // for other candidate treatments
             AddSecondCoatIfValid(segment, period, triggeredTreatments);
             if (triggeredTreatments.Count > 0) return triggeredTreatments;
+
+            // Only check Candidate Selection Filters after checking for second coat.
+
+            if (segment.SurfaceDistressIndex < domainModel.Constants.CSMinSDIToTreat) return triggeredTreatments; // If SDI is below the minimum threshold, do not add any treatments
+            if (segment.PavementDistressIndex < domainModel.Constants.CSMinPDIToTreat) return triggeredTreatments; // If PDI is below the minimum threshold, do not add any treatments
+            if (segment.SurfaceAchievedLifePercent < domainModel.Constants.CSMinSlaToTreatCs) return triggeredTreatments; // If SLA is below the minimum threshold, do not add any treatments
 
             //-------------------------------------- Other Treatments if we are not adding a second coat --------------------------------------
 
@@ -87,7 +95,7 @@ public static class TriggerChipseals
             double quantity = segment.AreaSquareMetre;
             var unitRateSet = lookups["cs_rehab_rate"];
             if (!unitRateSet.ContainsKey(segment.ONRC)) throw new Exception($"Unit rate for ONRC category '{segment.ONRC}' not found in lookup set 'cs_rehab_rate'.");
-            double unitRate = (double)unitRateSet[segment.ONRC];
+            double unitRate = Convert.ToDouble(unitRateSet[segment.ONRC]);
 
             TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, quantity:quantity, unitRate: unitRate, false, reason, comment);
             treatment.TreatmentSuitabilityScore = tssScore;

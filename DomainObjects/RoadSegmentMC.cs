@@ -37,7 +37,7 @@ public class RoadSegmentMC
     /// <summary>
     /// Segment identifier. Maps to input column "file_seg_name".
     /// </summary>
-    public string SegmentCode { get; set; }
+    public string SegmentCode { get; set; } = null!;
 
     /// <summary>
     /// Section ID. Maps to "file_section_id".
@@ -47,7 +47,7 @@ public class RoadSegmentMC
     /// <summary>
     /// Name of the section. Maps to "file_section_name".
     /// </summary>
-    public string SectionName { get; set; }
+    public string SectionName { get; set; } = null!;
 
     /// <summary>
     /// Start metre of the segment. Maps to "file_loc_from".
@@ -62,7 +62,7 @@ public class RoadSegmentMC
     /// <summary>
     /// Lane code. Maps to "file_lane_name".
     /// </summary>
-    public string LaneCode { get; set; }
+    public string LaneCode { get; set; } = null!;
 
     #endregion
 
@@ -87,7 +87,7 @@ public class RoadSegmentMC
     
     #region Surface and Pavement Properties
 
-    private string _surfaceClass;
+    private string _surfaceClass = null!;
 
     /// <summary>
     /// Surface class ('cs', 'ac', 'blocks', 'concrete', 'other').
@@ -95,7 +95,7 @@ public class RoadSegmentMC
     public string SurfaceClass
     {
         get => _surfaceClass;
-        set => _surfaceClass = value?.ToLower();
+        set => _surfaceClass = value?.ToLower() ?? string.Empty;
     }
 
     /// <summary>
@@ -124,9 +124,9 @@ public class RoadSegmentMC
             // 'concrete' should be 'other' to match the rules (even though there is a 'conc' in some rules,
             // user 'other' because some model building sets did not contain a 'conc' class. Thus, to be consistent, we map 'concrete' to 'other' for all rules)
             if (this.SurfaceClass == "concrete") return "other";
-            
-            // 'unknown' should be 'other' to match the rules
-             if (this.SurfaceClass == "unknown") return "other";
+
+            // 'unknown' should be 'other' to match the rules. If some rules contain 'unknown' as a class, we should update the rules to use 'other' instead
+            if (this.SurfaceClass == "unknown") return "other";
                         
             return this.SurfaceClass;
         }
@@ -192,7 +192,7 @@ public class RoadSegmentMC
     /// <summary>
     /// Surfacing material.
     /// </summary>
-    public string SurfaceMaterial { get; set; }
+    public string SurfaceMaterial { get; set; } = null!;
 
     /// <summary>
     /// Surfacing expected life (years) from RAMM.
@@ -286,16 +286,16 @@ public class RoadSegmentMC
 
     #region ONRC/Carriageway and Rainfall Attributes
 
-    private string _urbanRural;
-    private string _onrc;    
-    
+    private string _urbanRural = null!;
+    private string _onrc = null!;
+
     /// <summary>
     /// Urban/Rural flag.
     /// </summary>
     public string UrbanRural
     {
         get => _urbanRural;
-        set => _urbanRural = value?.ToLower();
+        set => _urbanRural = value?.ToLower() ?? string.Empty;
     }
 
     /// <summary>
@@ -304,7 +304,7 @@ public class RoadSegmentMC
     public string ONRC
     {
         get => _onrc;
-        set => _onrc = value?.ToLower();
+        set => _onrc = value?.ToLower() ?? string.Empty;
     }
             
     /// <summary>
@@ -318,7 +318,7 @@ public class RoadSegmentMC
     /// collapses the ONRC categories into three classes based on traffic volumes. It is used to refine certain aspects such 
     /// as Expected Surface Life, allowing differentiation but only in 3 classes.
     /// </summary>
-    public string RoadClass { get; set; }
+    public string RoadClass { get; set; } = null!;
 
     #endregion
 

@@ -79,7 +79,8 @@ public static class SetupUtilities
     public static PieceWiseLinearModel GetPieceWiseLinearModel(string parameterName, jcDataSet allSetups)
     {
         Dictionary<string, object> row = allSetups.Row(parameterName);
-        string pwlSetupString = row["plm_setup_code"].ToString();
+        string pwlSetupString = row["plm_setup_code"]?.ToString()
+            ?? throw new InvalidDataException($"Missing 'plm_setup_code' for parameter '{parameterName}'");
         PieceWiseLinearModel model = new PieceWiseLinearModel(pwlSetupString, false); //Do not extrapolate.
         return model;
     }
@@ -183,7 +184,8 @@ public static class SetupUtilities
         for (int i = 0; i < allSetups.Count; i++)
         {
             Dictionary<string, object> row = allSetups.Row(i);
-            string setupParameterName = row["parameter_key"].ToString();
+            string setupParameterName = row["parameter_key"]?.ToString()
+                ?? throw new InvalidDataException($"Missing 'parameter_key' on row {i}");
             if (setupParameterName == parameterName)
             {
                 setupData.AddRow(row);
@@ -198,7 +200,8 @@ public static class SetupUtilities
         for (int i = 0; i < coefsData.Count; i++)
         {
             Dictionary<string, object> row = coefsData.Row(i);
-            string variableName = row["term"].ToString();
+            string variableName = row["term"]?.ToString()
+                ?? throw new InvalidDataException($"Missing 'term' on row {i} of logistic coefficients");
             double coefValue = Convert.ToDouble(row["estimate"]);
             coefs[variableName] = coefValue;
         }
@@ -214,24 +217,25 @@ public static class SetupUtilities
     /// </summary>
     /// <param name="coefsData"></param>
     /// <returns></returns>
-    private static (Dictionary<string, double> coefficients, string residualSDPlmSetup) GetLinearRegressionModelCoefficients(jcDataSet coefsData)
+    private static (Dictionary<string, double> coefficients, string? residualSDPlmSetup) GetLinearRegressionModelCoefficients(jcDataSet coefsData)
     {
-        string residSDPlmSetup = null;
+        string? residSDPlmSetup = null;
         Dictionary<string, double> coefs = new Dictionary<string, double>();
         for (int i = 0; i < coefsData.Count; i++)
         {
             Dictionary<string, object> row = coefsData.Row(i);
-            string variableName = row["variable"].ToString();
+            string variableName = row["variable"]?.ToString()
+                ?? throw new InvalidDataException($"Missing 'variable' on row {i} of linear regression coefficients");
             if (variableName == "resid_sd_plm")
             {
                 // This is not a variable but rather the setup code for the residual SD PLM
-                residSDPlmSetup = row["coefficient"].ToString();                
+                residSDPlmSetup = row["coefficient"]?.ToString();
             }
             else
             {
                 double coefValue = Convert.ToDouble(row["coefficient"]);
                 coefs[variableName] = coefValue;
-            }            
+            }
         }
         return (coefs, residSDPlmSetup);
     }

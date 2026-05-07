@@ -20,10 +20,12 @@ public class Initialiser
     public RoadSegmentMC InitialiseSegment(int iElemIndex)
     {
 
-        if (iElemIndex == 4028)
+#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
+        if (iElemIndex == 2237)
         {
             int kk = 9;
         }
+#pragma warning restore CS0219
 
         // Create a new RoadSegmentMC object based purely on the raw data provided in the string array.
         RoadSegmentMC segment = RoadSegmentFactoryMC.GetFromRawData(_frameworkModel, iElemIndex);

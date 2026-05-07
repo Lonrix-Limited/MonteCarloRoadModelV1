@@ -26,10 +26,12 @@ public class Resetter
         // if treatment is null, return segment without changes
         if (treatment == null) return segment;
 
-        if (segment.ElementIndex == 22991)
+#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
+        if (segment.ElementIndex == 234)
         {
             int debug = 0; // Debugging breakpoint
         }
+#pragma warning restore CS0219
 
         bool isRehabTreatment = treatment.TreatmentName.ToLower().Contains("rehab");
         string treatmentTypeCode = isRehabTreatment ? "rehab" : "resurf";
@@ -46,12 +48,7 @@ public class Resetter
         segment.PavementRemainingLife = Convert.ToDouble(_frameworkModel.Lookups["pavement_expected_life"][segment.ONRC]);
 
         // No need to update Pavement Life Achieved and HCV Risk because it is automatically calculated based on the HCV and Pavement Life Achieved
-
-        if (segment.ElementIndex == 4028)
-        {
-            int kk = 9;
-        }
-
+        
         // Update surfacing age, class, material, thickness, function, expected life based on the treatment being applied. 
         UpdateSurfacingPropertiesForTreatment(segment, treatment);
 
@@ -122,8 +119,8 @@ public class Resetter
         // segment.SurfaceExpectedLife 
 
         segment.SurfaceAge = 0;  
-        segment.SurfaceMaterial = _frameworkModel.Lookups["treat_surf_materials"][treatment.TreatmentName].ToString();
-        segment.SurfaceClass = _frameworkModel.Lookups["treat_surf_class"][treatment.TreatmentName].ToString();
+        segment.SurfaceMaterial = GetSurfaceMaterialAfterTreatment(treatment.TreatmentName);
+        segment.SurfaceClass = segment.SurfaceMaterial; // After treatment,we simplify material name to be the same as surface class
         if (isRehabTreatment)
         {
             segment.SurfaceThickness = Convert.ToDouble(_frameworkModel.Lookups["surf_thickness_new"][segment.SurfaceMaterial]);
@@ -140,7 +137,17 @@ public class Resetter
             segment.SurfaceFunction = GetNextSurfaceFunction(segment.SurfaceFunction);
         }
 
-        segment.SurfaceExpectedLife = Convert.ToDouble(_frameworkModel.Lookups["surf_life_exp"][segment.SurfaceExpectedLifeCode]);
+        List<string> specialCases = new List<string> { "blocks", "concrete", "xtreat" };
+        if (specialCases.Contains(segment.SurfaceMaterial))
+        {
+            // For blocks, concrete and xtreat, we have a fixed expected life, unlike for cs, ogpa and ac, which also evaluates surface function and road category
+            segment.SurfaceExpectedLife = Convert.ToDouble(_frameworkModel.Lookups["surf_life_exp"][segment.SurfaceMaterial]);
+        }
+        else
+        {
+            segment.SurfaceExpectedLife = Convert.ToDouble(_frameworkModel.Lookups["surf_life_exp"][segment.SurfaceExpectedLifeCode]);
+        }
+                    
         // Note: surface life achieved and surface remaining life are automatically calculated based on the surface age and expected life
 
     }
@@ -158,6 +165,25 @@ public class Resetter
         }
     }
 
+    private string GetSurfaceMaterialAfterTreatment(string treatmentName)
+    {
+        switch (treatmentName)
+        {
+            case "blocks" :
+                return "blocks";
+            case "concrete":
+                return "concrete";
+            case "xtreat":
+                return "other";            
+            default:
+                //If we get here, we assume treatment name is of type 'cs_rehab'. Split and check if there is more than one value
+                //after splitting by '_'. If not, throw an exception because we do not know how to determine the surfacing properties after treatment
+                var parts = treatmentName.Split('_');
+                if (parts.Length < 2) throw new InvalidOperationException($"Unexpected treatment name format: {treatmentName}. Expected format is 'surfacingtype_treatmenttype', e.g. 'cs_rehab'");
+                string matCode = parts[0]; // The surfacing type code is the first part of the treatment name, e.g. 'cs' in 'cs_rehab'
+                return matCode;
+        }
+    }
 
     #endregion
 
@@ -187,19 +213,16 @@ public class Resetter
 
         double resettedValue;
 
-        if (treatmentName.Contains("resurf"))
-        {
-            resettedValue = subModels.RutResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
-        }
-        else if (treatmentName.Contains("rehab"))
+        if (treatmentName.Contains("rehab"))
         {
             resettedValue = subModels.RutResetSimulatorRehab.GetSimulatedValue(inputParameters, random);
         }
         else
         {
-            throw new InvalidOperationException($"Unknown treatment type code: {treatmentName}");
+            // Presume all other treatment types (holding, preseal repairs etc) reset as for resurfacing.
+            resettedValue = subModels.RutResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
         }
-
+                
         resettedValue = resettedValue + adjustment; // Apply the treatment specific adjustment to the reset value
 
         // Apply the overall calibration factor to the reset value after applying the treatment specific adjustment
@@ -234,18 +257,16 @@ public class Resetter
 
         double resettedValue;
 
-        if (treatmentName.Contains("resurf"))
-        {
-            resettedValue = subModels.IRIResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
-        }
-        else if (treatmentName.Contains("rehab"))
+        if (treatmentName.Contains("rehab"))
         {
             resettedValue = subModels.IRIResetSimulatorRehab.GetSimulatedValue(inputParameters, random);
         }
-        else
+        else 
         {
-            throw new InvalidOperationException($"Unknown treatment type code: {treatmentName}");
+            // Presume all other treatment types (holding, preseal repairs etc) reset as for resurfacing.
+            resettedValue = subModels.IRIResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
         }
+        
 
         resettedValue = resettedValue + adjustment; // Apply the treatment specific adjustment to the reset value
 

@@ -23,6 +23,13 @@ public class TreatmentsTrigger
     {        
         List<TreatmentInstance> triggeredTreatments = new List<TreatmentInstance>();
 
+#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
+        if (segment.ElementIndex == 44)
+        {
+            int debug = 0;
+        }
+#pragma warning restore CS0219
+
         // Check if the segment passes the Candidate Selection checks. If not, return an empty list.
         if (segment.IsCandidateForTreatment == 0) return triggeredTreatments;
 
@@ -30,8 +37,8 @@ public class TreatmentsTrigger
         // again here, because the Candidate Selection result was last evaluated at the last epoch, while the periods to
         // next treatment have now changed since the period has changed
         int periodsToNextTreatment = Convert.ToInt32(infoFromModel["periods_to_next_treatment"]);
-        if (periodsToNextTreatment <= 6) { return triggeredTreatments; }
-        
+        if (periodsToNextTreatment <= _domainModel.Constants.CSMinPeriodsToNextTreat) { return triggeredTreatments; }
+                
         //---------------------------------------------------------------------------------------------------------------------------------
         //      If we get here, we know that no second coats or birthday treatments are added.
         //      Now find candidate treatments to add to the optimisation stage
@@ -68,13 +75,13 @@ public class TreatmentsTrigger
         switch (segment.NextSurface)
         {
             case "blocks":
-                treatmentName = "BlockRep";
+                treatmentName = "blocks";
                 break;
             case "concrete":
-                treatmentName = "ConcRep";
+                treatmentName = "concrete";
                 break;
             case "other":
-                treatmentName = "Xtreat";
+                treatmentName = "xtreat";
                 break;
             default:
                 //If we get here, it is ChipSeal or Asphalt, which are not valid for this treatment

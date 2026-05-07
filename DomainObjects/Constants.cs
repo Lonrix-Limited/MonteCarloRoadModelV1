@@ -524,9 +524,15 @@ public class Constants
         _calMinIRIReducPaMaint = Convert.ToDouble(lookupSets["cal_maintenance"]["iri_reduc_min"]);
 
         // Calibration factors - Increments
-        _calFactRutIncrement = new PieceWiseLinearModel(lookupSets["cal_increments"]["rut"].ToString(),false);
-        _calFactIriIncrement = new PieceWiseLinearModel(lookupSets["cal_increments"]["iri"].ToString(),false);
-        _calFactTextureIncrement = new PieceWiseLinearModel(lookupSets["cal_increments"]["texture"].ToString(),false);
+        _calFactRutIncrement = new PieceWiseLinearModel(
+            lookupSets["cal_increments"]["rut"].ToString() ?? throw new InvalidDataException("Lookup 'cal_increments.rut' is null"),
+            false);
+        _calFactIriIncrement = new PieceWiseLinearModel(
+            lookupSets["cal_increments"]["iri"].ToString() ?? throw new InvalidDataException("Lookup 'cal_increments.iri' is null"),
+            false);
+        _calFactTextureIncrement = new PieceWiseLinearModel(
+            lookupSets["cal_increments"]["texture"].ToString() ?? throw new InvalidDataException("Lookup 'cal_increments.texture' is null"),
+            false);
         _calMaxRutIncrement = Convert.ToDouble(lookupSets["cal_increments"]["rut_max"]);
         _calMaxIriIncrement = Convert.ToDouble(lookupSets["cal_increments"]["iri_max"]);
 

@@ -38,7 +38,8 @@ public static class RoadSegmentFactoryMC
         segment.UrbanRural = model.GetInputDataText(segment.ElementIndex, "inp_urban_rural").ToLower();
         segment.ONRC = model.GetInputDataText(segment.ElementIndex, "inp_onrc").ToLower();
         segment.RainfallMM = model.GetInputDataNumber(segment.ElementIndex, "inp_rainfall");
-        segment.RoadClass = model.Lookups["road_class"][segment.ONRC].ToString();
+        segment.RoadClass = model.Lookups["road_class"][segment.ONRC].ToString()
+            ?? throw new InvalidOperationException($"Lookup 'road_class' for ONRC '{segment.ONRC}' returned null on element {elementIndex}");
 
         // Traffic        
         segment.AverageDailyTraffic = Math.Max(1, model.GetInputDataNumber(segment.ElementIndex, "inp_adt")); //Ensure ADT is at least 1

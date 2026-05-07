@@ -22,10 +22,12 @@ public class Incrementer
 
     public RoadSegmentMC Increment(RoadSegmentMC segment, int period)
     {
+#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
         if (segment.ElementIndex == 4028)
         {
             int kk = 9;
         }
+#pragma warning restore CS0219
 
         // Increment all properties related to model parameters
         // Keep the code same order as the model parameter list

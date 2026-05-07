@@ -21,6 +21,11 @@ public static class TriggerAsphalts
         {
             List<TreatmentInstance> triggeredTreatments = new List<TreatmentInstance>();
 
+            // Candidate Selection Filters:
+            if (segment.SurfaceDistressIndex < domainModel.Constants.CSMinSDIToTreat) return triggeredTreatments; // If SDI is below the minimum threshold, do not add any treatments
+            if (segment.PavementDistressIndex < domainModel.Constants.CSMinPDIToTreat) return triggeredTreatments; // If PDI is below the minimum threshold, do not add any treatments
+            if (segment.SurfaceAchievedLifePercent < domainModel.Constants.CSMinSlaToTreatAc) return triggeredTreatments; // If SLA is below the minimum threshold, do not add any treatments
+
             AddPreservationThinACIfValid(segment, domainModel, period, triggeredTreatments);
             AddHoldingThinACIfValid(segment, frameworkModel, domainModel, period, triggeredTreatments);
             AddAcHeavyMaintenanceIfValid(segment, period, domainModel, triggeredTreatments, infoFromModel);
@@ -77,7 +82,7 @@ public static class TriggerAsphalts
             string unitRateSetKey = segment.SurfaceClassForTreatment + "_rehab_rate";
             var unitRateSet = lookups[unitRateSetKey];
             if (!unitRateSet.ContainsKey(segment.ONRC)) throw new Exception($"Unit rate for ONRC category '{segment.ONRC}' not found in lookup set '{unitRateSetKey}'.");
-            double unitRate = (double)unitRateSet[segment.ONRC];
+            double unitRate = Convert.ToDouble(unitRateSet[segment.ONRC]);
 
             TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, quantity: quantity, unitRate: unitRate, false, reason, comment);
             treatment.TreatmentSuitabilityScore = tssScore;
@@ -253,7 +258,7 @@ public static class TriggerAsphalts
 
             List<TreatmentInstance> previousTreatments = (List<TreatmentInstance>)infoFromModel["previous_treatments"];
 
-            TreatmentInstance lastNonRoutineMaintenanceTreatment = null;
+            TreatmentInstance? lastNonRoutineMaintenanceTreatment = null;
 
             // Loop over all previous treatments to find the most recent non-routine maintenance treatment
             int minTreatmentPeriod = int.MaxValue;

@@ -163,8 +163,10 @@ public static class RoadSegmentFactoryMC
         segment.MaintenancePavement = numParamValues["par_maint_pa"]; // Updated maintenance extent for pavement
         segment.MaintenancePotfill = numParamValues["par_maint_poth"]; // Updated maintenance extent for pothole filling
 
-        
-       
+        // Candidate Selection from last period
+        segment.CandidateSelectionOutcome = textParamValues["par_trigg_info"];
+
+
         // Ensure that the method to re-calculate index values is called after return
 
         return segment;

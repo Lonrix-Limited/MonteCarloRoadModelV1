@@ -20,12 +20,7 @@ public static class TriggerAsphalts
         try
         {
             List<TreatmentInstance> triggeredTreatments = new List<TreatmentInstance>();
-
-            // Candidate Selection Filters:
-            if (segment.SurfaceDistressIndex < domainModel.Constants.CSMinSDIToTreat) return triggeredTreatments; // If SDI is below the minimum threshold, do not add any treatments
-            if (segment.PavementDistressIndex < domainModel.Constants.CSMinPDIToTreat) return triggeredTreatments; // If PDI is below the minimum threshold, do not add any treatments
-            if (segment.SurfaceAchievedLifePercent < domainModel.Constants.CSMinSlaToTreatAc) return triggeredTreatments; // If SLA is below the minimum threshold, do not add any treatments
-
+                       
             AddPreservationThinACIfValid(segment, domainModel, period, triggeredTreatments);
             AddHoldingThinACIfValid(segment, frameworkModel, domainModel, period, triggeredTreatments);
             AddAcHeavyMaintenanceIfValid(segment, period, domainModel, triggeredTreatments, infoFromModel);

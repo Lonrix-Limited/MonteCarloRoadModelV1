@@ -223,7 +223,10 @@ public class RoadSegmentMC
 
         
     /// <summary>
-    /// Returns the percentage of the Surface Expected Life that has been achieved based on the Surface Age.
+    /// Returns the percentage of the Surface Expected Life that has been achieved based on the Surface Age, as it will be in the NEXT
+    /// period. We add one year to the surfacing age when calculating this, so that, for example for a first coat that has a 1 year life,
+    /// the value will be 100% at the START of the next period when triggers are evaluated. If we do not do this, the 100% value will be
+    /// registered only at the END of the next period (one year too late). Sketch it out!
     /// </summary>
     public double SurfaceAchievedLifePercent
     {
@@ -235,7 +238,7 @@ public class RoadSegmentMC
             }
             // As per JFunctions, limit the value to 200 to prevent very high values from distorting MCDA
             // TODO: Re-think this
-            return Math.Min(200, 100 * (this.SurfaceAge / this.SurfaceExpectedLife));
+            return Math.Min(200, 100 * ((this.SurfaceAge+1) / this.SurfaceExpectedLife));
         }
     }
 
@@ -478,10 +481,29 @@ public class RoadSegmentMC
 
     #region Treatment Trigger Related
 
-    public double GetRehabilitationNeedsIndex(double rutThreshold)
+    /// <summary>
+    /// Candidate Selection Outcome calculated at the end of the epoch based on the segment properties and condition, and 
+    /// used in the next period to determine if the segment is a candidate for treatment. If value is 'ok' it means the
+    /// segment can be considered for treatment. Otherwise, the flag should contain information explaining why the segment
+    /// is NOT a viableThis is set based on the logic in the CandidateSelector class, and can be used to provide feedback on why a segment was or was not selected as a candidate for treatment. It is also used in the TreatmentsTrigger class to determine which treatments to trigger for the segment based on the Candidate Selection Outcome. Default value is "Not evaluated" before candidate selection is evaluated, and it should be set to a specific outcome after evaluation.
+    /// </summary>
+    public string CandidateSelectionOutcome { get; set; } = "Not evaluated"; // Default value before candidate selection is evaluated
+
+    public double GetRehabilitationNeedsIndex(Constants constants)
     {
+        if (this.LengthInMetre < constants.MinimumLengthForRehab) return 0; // If segment is very short, then rehabilitation need is zero regardless of PDI, rut depth or SDI
+
+        if (this.PavementDistressIndex < constants.MinimumPdiForRehab(this.SurfaceClass) && this.RutMeanObserved < 15) return 0; // If PDI is very low, then rehabilitation need is zero regardless of rut depth or SDI, except if Rut is above 15 mm
+
         //Pavement Distress Index plus excess rut. If rut is below threshold, then rehabilitation need is penalised.
-        return this.PavementDistressIndex + (this.RutMeanObserved - rutThreshold);
+        double needsIndex = this.PavementDistressIndex + (this.RutMeanObserved - constants.TSSExcessRutThresh);
+
+        //If rut is above the threshold and Surface Distress Index is high, then it increases the likelyhood that the 
+        //surface distress is caused by surface instability etc. So if this is the case, bump up the rehabilitation need by
+        //adding part of the Surface Distress Index as well.
+        if (this.RutMeanObserved > constants.TSSExcessRutThresh) needsIndex += 0.1 * this.SurfaceDistressIndex; // The factor of 0.1 is arbitrary and can be adjusted based on expert judgement or calibration
+
+        return Math.Max(0, needsIndex);
     }
 
     public double GetSurfaceTreatmentNeedsIndex(Constants constants)
@@ -596,7 +618,8 @@ public class RoadSegmentMC
     /// </summary>
     /// <param name="numModParamValues">Return value: Sink holding values for numeric parameters (to be updated by Domain Model). Keys are parameter names, values are assigned values</param>
     /// <param name="textModParamValues">Return value: Sink holding values for text parameters (to be updated by Domain Model). Keys are parameter names, values are assigned values</param>     
-    public void SetParameterValues(Action<string, double> numModParamValues, Action<string, string> textModParamValues, Constants constants)
+    public void SetParameterValues(Action<string, double> numModParamValues, Action<string, string> textModParamValues, Constants constants,
+                                   Dictionary<string, object> infoFromModel)
     {
         numModParamValues("par_adt", this.AverageDailyTraffic);
         numModParamValues("par_hcv", this.HeavyVehiclesPerDay);
@@ -631,11 +654,14 @@ public class RoadSegmentMC
 
         numModParamValues("par_pdi", this.PavementDistressIndex);
         numModParamValues("par_sdi", this.SurfaceDistressIndex);
-        numModParamValues("par_rni", this.GetRehabilitationNeedsIndex(constants.TSSExcessRutThresh));
+        numModParamValues("par_rni", this.GetRehabilitationNeedsIndex(constants));
         numModParamValues("par_sni", this.GetSurfaceTreatmentNeedsIndex(constants));
 
         numModParamValues("par_maint_pa", this.MaintenancePavement);
         numModParamValues("par_maint_poth", this.MaintenancePotfill);
+
+        int periodsToNextTreatment = Convert.ToInt32(infoFromModel["periods_to_next_treatment"]);
+        textModParamValues("par_trigg_info", CandidateSelector.GetCandidateSelectionOutcome(this, constants, periodsToNextTreatment));
 
         // The following are Network Parameters - to be set automatically by the framework model:        
         //para_sla_rank

@@ -66,8 +66,6 @@ public class Incrementer
         // IRI 
         IncrementIRI(segment);
 
-        
-
         // Texture Depth
         // Check if we need to draw a new increment for texture based on the episode length. This will update the TextureIncrement property of the segment as needed
         CheckTextureIncrementForEpisode(segment, _domainModel.Constants.MaximumEpisodeLengthTexture);
@@ -80,10 +78,40 @@ public class Incrementer
         // Maintenance
         _domainModel.MaintenanceModel.UpdateRoutineMaintenanceExtents(segment);
         
+        //PDI and SDI
+        IncrementPDIandSDI(segment, _domainModel.Constants);
 
         // Ranking parameters will be calculated by the framework model
 
         return segment;
+
+    }
+
+
+    /// <summary>
+    /// Placeholder for incrementing PDI and SDI. TODO: Update this with simulator etc.
+    /// </summary>
+    /// <param name="segment"></param>
+    private void IncrementPDIandSDI(RoadSegmentMC segment,Constants constants)
+    {
+        // Very simple placeholder logic: if PDI or SDI is zero, it stays zero.
+        
+        // PDI: if above zero, increase by base rate of 1% plus 0.5% per year for each mm that rut is above threshold.
+        double rutThreshold = constants.TSSExcessRutThresh;
+        double excessRut = Math.Max(0, segment.RutMeanObserved - rutThreshold);
+        if (segment.PavementDistressIndex > 0)
+        {
+            double pdiIncrement = 1.0 + (0.5 * excessRut);
+            segment.PavementDistressIndex = segment.PavementDistressIndex + pdiIncrement;
+        }
+
+        // SDI: if above zero, increase by LN(ADT)/5; this gives about 0.5% increase at ADT = 10, 
+        // 1% increase at ADT = 200, and 1.5% increase at ADT = 1600, 2% at ADT 20,000 etc.
+        if (segment.SurfaceDistressIndex > 0)
+        {
+            double sdiIncrement = Math.Log(segment.AverageDailyTraffic+1) / 5.0;
+            segment.SurfaceDistressIndex = segment.SurfaceDistressIndex + sdiIncrement;
+        }
 
     }
 

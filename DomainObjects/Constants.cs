@@ -37,6 +37,12 @@ public class Constants
     private double _csTextureThreshold;
     private double _csTextureFactor;  
 
+    private double _minLengthRehab;
+    private double _minPdiForRehabAC;
+    private double _minPdiForRehabCS;
+    private double _minPdiForRehabOGPA;
+
+
     // Related to MCDA Treatment Triggering
     private double _maxSlaForACHeavyMaint;
     private int _minPeriodsBetweenACHeavyMaint;
@@ -102,6 +108,40 @@ public class Constants
     #endregion
 
     #region Treatment Selection MCDA
+
+    /// <summary>
+    /// Minimim length, in metres, below which rehabilitation treatments are not considered
+    /// </summary>
+    public double MinimumLengthForRehab
+    {
+        get { return _minLengthRehab; }
+    }
+
+    
+    /// <summary>
+    /// Minimum PDI threshold for below which Rehabilitation Needs Index is set to zero except if rut is above 15 mm
+    /// </summary>
+
+    public double MinimumPdiForRehab(string surfaceClass)
+    {
+        if (surfaceClass == "ac" || surfaceClass == "slurry")
+        {
+            return _minPdiForRehabAC;
+        }
+        else if (surfaceClass == "cs")
+        {
+            return _minPdiForRehabCS;
+        }
+        else if (surfaceClass == "ogpa")
+        {
+            return _minPdiForRehabOGPA;
+        }
+        else
+        {
+            return 0;  // For other surface classes, do not apply a minimum PDI threshold for rehab since a birthday treatment concept applies
+        }
+    }
+    
 
     /// <summary>
     /// Rut threshold above which a penalty(for Preservation/Holding Actions) or Boost(for Rehabs) is applied
@@ -228,6 +268,7 @@ public class Constants
     {
         get { return _episodeLengthTexture; }
     }
+
 
     #endregion
 
@@ -484,8 +525,12 @@ public class Constants
         _min_pdi_to_treat = Convert.ToDouble(lookupSets["candidate_selection"]["min_pdi_to_treat"]);
         _minSlaToTreatAc = Convert.ToDouble(lookupSets["candidate_selection"]["min_sla_to_treat_ac"]);
         _minSlaToTreatCs = Convert.ToDouble(lookupSets["candidate_selection"]["min_sla_to_treat_cs"]);
-               
-        
+
+       _minLengthRehab = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["min_length_rehab"]);
+       _minPdiForRehabAC = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["min_pdi_for_rehab_ac"]);
+       _minPdiForRehabCS = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["min_pdi_for_rehab_cs"]);
+       _minPdiForRehabOGPA = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["min_pdi_for_rehab_ogpa"]);
+
         // Related to TSS
         _excessRutThreshold = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["excess_rut_threshold"]);        
         _rehabMinRniRank = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["rehab_min_rni_rank"]);

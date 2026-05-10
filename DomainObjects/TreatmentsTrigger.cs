@@ -23,15 +23,13 @@ public class TreatmentsTrigger
     {        
         List<TreatmentInstance> triggeredTreatments = new List<TreatmentInstance>();
 
-#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
-        if (segment.ElementIndex == 44)
+        if (period > 2 && segment.ElementIndex == 10023)
         {
-            int debug = 0;
+            _ = 0; // breakpoint anchor — set/remove IDE breakpoint here at runtime
         }
-#pragma warning restore CS0219
 
         // Check if the segment passes the Candidate Selection checks. If not, return an empty list.
-        if (segment.IsCandidateForTreatment == 0) return triggeredTreatments;
+        if (segment.CandidateSelectionOutcome != "ok") return triggeredTreatments;
 
         // Although we check if Periods to Next Treatment (i.e. committed) in the Candidate Selection, we need to do it 
         // again here, because the Candidate Selection result was last evaluated at the last epoch, while the periods to

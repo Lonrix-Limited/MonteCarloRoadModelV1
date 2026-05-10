@@ -96,13 +96,6 @@ public class MonteCarloRoadModelV1 : DomainModelBase
     {
         try
         {
-#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
-            if (iElemIndex == 8426)
-            {
-                int kk = 9;
-            }
-#pragma warning restore CS0219
-
             Dictionary<string, object> infoFromModel = model.GetSpecialPlaceholderValues(iElemIndex, 0);
             RoadSegmentMC segment = _initialiser.InitialiseSegment(iElemIndex);
 
@@ -111,7 +104,7 @@ public class MonteCarloRoadModelV1 : DomainModelBase
             //segment.UpdateFormulaValues(this.model, this, 0,infoFromModel);
 
             //// By updating the sinks, the model will automatically update the values in the Framework Model matrices
-            segment.SetParameterValues(numModParamValues, textModParamValues, this.Constants);
+            segment.SetParameterValues(numModParamValues, textModParamValues, this.Constants, infoFromModel);
                         
         }
         catch (Exception ex)
@@ -140,14 +133,6 @@ public class MonteCarloRoadModelV1 : DomainModelBase
     {
         try
         {
-#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
-            if (iElemIndex == 456)
-            {
-                int kk = 9;
-            }
-#pragma warning restore CS0219
-
-            //var (numPrevValues, textPrevValues) = model.GetParameterValues(iElemIndex, iPeriod - 1);
 
             Dictionary<string, object> infoFromModel = model.GetSpecialPlaceholderValues(iElemIndex, iPeriod, treatment);
 
@@ -158,7 +143,7 @@ public class MonteCarloRoadModelV1 : DomainModelBase
             RoadSegmentMC resettedSegment = _resetter.ResetSegment(segment, iPeriod, treatment);
             //resettedSegment.UpdateFormulaValues(this.model, this, iPeriod, infoFromModel);
             
-            resettedSegment.SetParameterValues(numModParamValues, textModParamValues, this.Constants);
+            resettedSegment.SetParameterValues(numModParamValues, textModParamValues, this.Constants, infoFromModel);
             
         }
         catch (Exception ex)
@@ -184,25 +169,15 @@ public class MonteCarloRoadModelV1 : DomainModelBase
         Action<string, double> numModParamValues, Action<string, string> textModParamValues)
     {
         try
-        {
-#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
-            if (iElemIndex == 89 && iPeriod == 1)
-            {
-                int kk = 9;
-            }
-#pragma warning restore CS0219
-
-            //var (numPrevValues, textPrevValues) = model.GetParameterValues(iElemIndex, iPeriod - 1);
-
+        {            
             Dictionary<string, object> infoFromModel = model.GetSpecialPlaceholderValues(iElemIndex, iPeriod, null);
 
             RoadSegmentMC segment = RoadSegmentFactoryMC.GetFromModel(this.model, numInputs, textInputs, currentNumModParamValues, currentTextModParamValues, iElemIndex, iPeriod);
             
             // Apply increments here
             RoadSegmentMC incrementedSegment = _incrementer.Increment(segment, iPeriod);
-            //incrementedSegment.UpdateFormulaValues(this.model, this, iPeriod, infoFromModel);
-
-            incrementedSegment.SetParameterValues(numModParamValues, textModParamValues, this.Constants);
+         
+            incrementedSegment.SetParameterValues(numModParamValues, textModParamValues, this.Constants, infoFromModel);
             
         }
         catch (Exception ex)
@@ -232,13 +207,6 @@ public class MonteCarloRoadModelV1 : DomainModelBase
     {
         try
         {
-#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
-            if (iElemIndex == 3 && iPeriod == 32)
-            {
-                int kk = 0;
-            }
-#pragma warning restore CS0219
-
             Dictionary<string, object> infoFromModel = model.GetSpecialPlaceholderValues(iElemIndex, iPeriod, null);
 
             RoadSegmentMC segment = RoadSegmentFactoryMC.GetFromModel(this.model, numInputs, textInputs, numModParamValues, textModParamValues, iElemIndex, iPeriod);

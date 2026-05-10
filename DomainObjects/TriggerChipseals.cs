@@ -18,25 +18,12 @@ public static class TriggerChipseals
         {
             List<TreatmentInstance> triggeredTreatments = new List<TreatmentInstance>();
 
-#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
-            if (segment.ElementIndex == 44)
-            {
-              int debug = 0;
-            }
-#pragma warning restore CS0219
-
             // If we are triggering a ChipSeal treatment, then we need to check if a second coat after Rehabilitation or a follow-up chipseal after Preseal Repairs should be added.
             // Check if second coat after Rehabilitation should be added. If so, since we are forcing it, do not look
             // for other candidate treatments
             AddSecondCoatIfValid(segment, period, triggeredTreatments);
             if (triggeredTreatments.Count > 0) return triggeredTreatments;
-
-            // Only check Candidate Selection Filters after checking for second coat.
-
-            if (segment.SurfaceDistressIndex < domainModel.Constants.CSMinSDIToTreat) return triggeredTreatments; // If SDI is below the minimum threshold, do not add any treatments
-            if (segment.PavementDistressIndex < domainModel.Constants.CSMinPDIToTreat) return triggeredTreatments; // If PDI is below the minimum threshold, do not add any treatments
-            if (segment.SurfaceAchievedLifePercent < domainModel.Constants.CSMinSlaToTreatCs) return triggeredTreatments; // If SLA is below the minimum threshold, do not add any treatments
-
+            
             //-------------------------------------- Other Treatments if we are not adding a second coat --------------------------------------
 
             AddPreservationChipsealIfValid(segment, domainModel, period, triggeredTreatments);
@@ -180,14 +167,14 @@ public static class TriggerChipseals
         try
         {
             // Only add a second coat if it is needed and the segment is a valid candidate
-            if (segment.SecondCoatNeeded)
+            if (segment.SecondCoatNeeded && segment.SurfaceAchievedLifePercent >= 100)
             {
-                string treatmentName = "cs_on_rehab";
+                string treatmentName = "cs_2nd_coat_r";
                 string reason = "Second-Coat on Rehab";
 
-                if (segment.SurfaceFunction != "1a")
+                if (segment.SurfaceFunction == "1a")
                 {
-                    treatmentName = "cs_on_repairs";
+                    treatmentName = "cs_2nd_coat_h";
                     reason = "Second-Coat on Preseal Repairs";
                 }
 

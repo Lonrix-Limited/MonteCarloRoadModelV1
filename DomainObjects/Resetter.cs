@@ -26,12 +26,11 @@ public class Resetter
         // if treatment is null, return segment without changes
         if (treatment == null) return segment;
 
-#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
-        if (segment.ElementIndex == 234)
+        if (period > 2 && segment.ElementIndex == 10023)
         {
-            int debug = 0; // Debugging breakpoint
+            _ = 0; // breakpoint anchor — set/remove IDE breakpoint here at runtime
         }
-#pragma warning restore CS0219
+
 
         bool isRehabTreatment = treatment.TreatmentName.ToLower().Contains("rehab");
         string treatmentTypeCode = isRehabTreatment ? "rehab" : "resurf";
@@ -50,7 +49,7 @@ public class Resetter
         // No need to update Pavement Life Achieved and HCV Risk because it is automatically calculated based on the HCV and Pavement Life Achieved
         
         // Update surfacing age, class, material, thickness, function, expected life based on the treatment being applied. 
-        UpdateSurfacingPropertiesForTreatment(segment, treatment);
+        UpdateSurfacingPropertiesForTreatment(segment, treatment, isRehabTreatment);
 
         UpdateFlagsForTreatment(segment, treatment);
 
@@ -111,11 +110,10 @@ public class Resetter
     /// </summary>
     /// <param name="segment">Segment on which to update surfacing properties</param>
     /// <param name="treatment">Treatment being applied</param>
-    private void UpdateSurfacingPropertiesForTreatment(RoadSegmentMC segment, TreatmentInstance treatment)
+    private void UpdateSurfacingPropertiesForTreatment(RoadSegmentMC segment, TreatmentInstance treatment, bool isRehabTreatment)
     {
-        bool isRehabTreatment = treatment.TreatmentName.ToLower().Contains("rehab");
-        // No change in these properties:
-                       
+        
+        // No change in these properties:                       
         // segment.SurfaceExpectedLife 
 
         segment.SurfaceAge = 0;  
@@ -134,7 +132,10 @@ public class Resetter
             double thicknessAdded = Convert.ToDouble(_frameworkModel.Lookups["surf_thickness_add"][segment.SurfaceMaterial]);
             segment.SurfaceThickness = segment.SurfaceThickness + thicknessAdded;
             segment.SurfaceNumberOfLayers += 1;
-            segment.SurfaceFunction = GetNextSurfaceFunction(segment.SurfaceFunction);
+
+            bool isPresealRepairs = treatment.TreatmentName.ToLower().Contains("preseal");
+
+            segment.SurfaceFunction = GetNextSurfaceFunction(segment.SurfaceFunction, isPresealRepairs);
         }
 
         List<string> specialCases = new List<string> { "blocks", "concrete", "xtreat" };
@@ -152,10 +153,13 @@ public class Resetter
 
     }
 
-    private string GetNextSurfaceFunction(string currentFunction)
+    private string GetNextSurfaceFunction(string currentFunction, bool isPresealRepairs)
     {
+        if (isPresealRepairs) return "1a";
         switch (currentFunction)
         {
+            case "1a":
+                return "2";
             case "1":
                 return "2";
             case "2": 

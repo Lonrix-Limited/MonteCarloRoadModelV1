@@ -78,7 +78,9 @@ public static class RoadSegmentFactoryMC
         // Routine Maintenance 
         segment.MaintenancePavement = model.GetInputDataNumber(segment.ElementIndex, "inp_maint_pa_ext");
         segment.MaintenancePotfill = model.GetInputDataNumber(segment.ElementIndex, "inp_maint_poth_ext");
-
+        segment.MaintenanceFreqHistoricalPA = model.GetInputDataNumber(segment.ElementIndex, "inp_maint_pa_rept_ext");
+        segment.MaintenanceFreqHistoricalPoth = model.GetInputDataNumber(segment.ElementIndex, "inp_maint_poth_rept_ext");
+        
         // Treatment Triggering Flags
         segment.CanTreatFlag = Convert.ToInt32(model.GetInputDataNumber(segment.ElementIndex, "inp_can_treat_flag"));        
         segment.CanDoThinACOverlay = Convert.ToInt32(model.GetInputDataNumber(segment.ElementIndex, "inp_thin_ac_ok_flag"));

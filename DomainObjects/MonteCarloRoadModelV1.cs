@@ -104,7 +104,7 @@ public class MonteCarloRoadModelV1 : DomainModelBase
             //segment.UpdateFormulaValues(this.model, this, 0,infoFromModel);
 
             //// By updating the sinks, the model will automatically update the values in the Framework Model matrices
-            segment.SetParameterValues(numModParamValues, textModParamValues, this.Constants, infoFromModel);
+            segment.SetParameterValues(numModParamValues, textModParamValues, this.Constants, infoFromModel, 0);
                         
         }
         catch (Exception ex)
@@ -143,7 +143,7 @@ public class MonteCarloRoadModelV1 : DomainModelBase
             RoadSegmentMC resettedSegment = _resetter.ResetSegment(segment, iPeriod, treatment);
             //resettedSegment.UpdateFormulaValues(this.model, this, iPeriod, infoFromModel);
             
-            resettedSegment.SetParameterValues(numModParamValues, textModParamValues, this.Constants, infoFromModel);
+            resettedSegment.SetParameterValues(numModParamValues, textModParamValues, this.Constants, infoFromModel, iPeriod);
             
         }
         catch (Exception ex)
@@ -177,7 +177,7 @@ public class MonteCarloRoadModelV1 : DomainModelBase
             // Apply increments here
             RoadSegmentMC incrementedSegment = _incrementer.Increment(segment, iPeriod);
          
-            incrementedSegment.SetParameterValues(numModParamValues, textModParamValues, this.Constants, infoFromModel);
+            incrementedSegment.SetParameterValues(numModParamValues, textModParamValues, this.Constants, infoFromModel, iPeriod);
             
         }
         catch (Exception ex)

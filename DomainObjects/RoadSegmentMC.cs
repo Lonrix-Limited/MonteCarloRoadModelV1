@@ -436,6 +436,33 @@ public class RoadSegmentMC
     /// </summary>
     public double MaintenancePotfill { get; set; }
 
+    /// <summary>
+    /// Historical maintenance extent - calculated in Casper as the extent of the segment that has seen 2 or more
+    /// PA maintenance actions in the last 3 years. 
+    /// </summary>
+    public double MaintenanceFreqHistoricalPA { get; set; }
+
+    /// <summary>
+    /// Historical maintenance extent - calculated in Casper as the extent of the segment that has seen 2 or more
+    /// Pothole maintenance actions in the last 3 years. 
+    /// </summary>
+    public double MaintenanceFreqHistoricalPoth { get; set; }
+
+    public double GetHistoricalPAMaintenanceBoostFactor()
+    {
+        // Zero if MaintenanceFreqHistoricalPA is <= 0.1, otherwise linear increase from 1 at 0.1 to 1.5 at 0.5, and capped at 1.5 for values above 0.5
+        if (this.MaintenanceFreqHistoricalPA <= 0.1) return 1.0;
+        if (this.MaintenanceFreqHistoricalPA >= 0.5) return 1.5;
+        return 1.0 + (this.MaintenanceFreqHistoricalPA - 0.1) / (0.5 - 0.1) * 0.5;
+    }
+
+    public double GetHistoricalPotfillMaintenanceBoostFactor()
+    {
+        // Zero if MaintenanceFreqHistoricalPoth is <= 0.1, otherwise linear increase from 1 at 0.1 to 1.5 at 0.5, and capped at 1.5 for values above 0.5
+        if (this.MaintenanceFreqHistoricalPoth <= 0.1) return 1.0;
+        if (this.MaintenanceFreqHistoricalPoth >= 0.5) return 1.5;
+        return 1.0 + (this.MaintenanceFreqHistoricalPoth - 0.1) / (0.5 - 0.1) * 0.5;
+    }
 
     #endregion
 
@@ -489,7 +516,7 @@ public class RoadSegmentMC
     /// </summary>
     public string CandidateSelectionOutcome { get; set; } = "Not evaluated"; // Default value before candidate selection is evaluated
 
-    public double GetRehabilitationNeedsIndex(Constants constants)
+    public double GetRehabilitationNeedsIndex(Constants constants, int period)
     {
         if (this.LengthInMetre < constants.MinimumLengthForRehab) return 0; // If segment is very short, then rehabilitation need is zero regardless of PDI, rut depth or SDI
 
@@ -503,15 +530,26 @@ public class RoadSegmentMC
         //adding part of the Surface Distress Index as well.
         if (this.RutMeanObserved > constants.TSSExcessRutThresh) needsIndex += 0.1 * this.SurfaceDistressIndex; // The factor of 0.1 is arbitrary and can be adjusted based on expert judgement or calibration
 
+        if (period <= constants.HistoricalMaintenanceUsePeriods)
+        {
+            double historicalPAMaintenanceBoost = this.GetHistoricalPAMaintenanceBoostFactor();
+            needsIndex = needsIndex * historicalPAMaintenanceBoost;
+        }
+
         return Math.Max(0, needsIndex);
     }
 
-    public double GetSurfaceTreatmentNeedsIndex(Constants constants)
+    public double GetSurfaceTreatmentNeedsIndex(Constants constants, int period)
     {
                         
         //Surface Distress Index minus excess rut if any. If rut is below threshold, then excess rut is zero and does not increase the need for surface treatment.
         //If rut is above threshold, then excess rut increases the need for surface treatment. 
         double baseSNI = this.SurfaceDistressIndex - Math.Max(0,this.RutMeanObserved - constants.TSSExcessRutThresh);
+        if (period <= constants.HistoricalMaintenanceUsePeriods)
+        {
+            double historicalPotfillBooster = this.GetHistoricalPotfillMaintenanceBoostFactor();
+            baseSNI = baseSNI * historicalPotfillBooster;
+        }
 
         if (this.SurfaceClass == "cs")
         {
@@ -619,7 +657,7 @@ public class RoadSegmentMC
     /// <param name="numModParamValues">Return value: Sink holding values for numeric parameters (to be updated by Domain Model). Keys are parameter names, values are assigned values</param>
     /// <param name="textModParamValues">Return value: Sink holding values for text parameters (to be updated by Domain Model). Keys are parameter names, values are assigned values</param>     
     public void SetParameterValues(Action<string, double> numModParamValues, Action<string, string> textModParamValues, Constants constants,
-                                   Dictionary<string, object> infoFromModel)
+                                   Dictionary<string, object> infoFromModel, int period)
     {
         numModParamValues("par_adt", this.AverageDailyTraffic);
         numModParamValues("par_hcv", this.HeavyVehiclesPerDay);
@@ -654,8 +692,8 @@ public class RoadSegmentMC
 
         numModParamValues("par_pdi", this.PavementDistressIndex);
         numModParamValues("par_sdi", this.SurfaceDistressIndex);
-        numModParamValues("par_rni", this.GetRehabilitationNeedsIndex(constants));
-        numModParamValues("par_sni", this.GetSurfaceTreatmentNeedsIndex(constants));
+        numModParamValues("par_rni", this.GetRehabilitationNeedsIndex(constants, period));
+        numModParamValues("par_sni", this.GetSurfaceTreatmentNeedsIndex(constants, period));
 
         numModParamValues("par_maint_pa", this.MaintenancePavement);
         numModParamValues("par_maint_poth", this.MaintenancePotfill);

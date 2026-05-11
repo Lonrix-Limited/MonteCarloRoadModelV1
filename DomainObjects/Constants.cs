@@ -1,6 +1,8 @@
 ﻿
 using System.Runtime.CompilerServices;
+using DocumentFormat.OpenXml.Wordprocessing;
 using JCass_Core.Statistics;
+using JCass_Economics.Utilities;
 
 namespace MonteCarloRoadModelV1.DomainObjects;
 
@@ -22,17 +24,20 @@ public class Constants
     private double _min_pdi_to_treat;
 
 
-    // Related to TSS (Treatment Suitability Scores - MCDA)
+    // Related to Rehabilitation Needs Index and TSS
+    private int _histMaintUsePeriods;
     private double _excessRutThreshold;    
     private double _rehabMinRniRank;
     private double _holdingRniRankPt1;
     private double _holdingRniRankPt2;
     private double _holdingRniRankPt3;
-        
+
+    //Related to TSS(Treatment Suitability Scores - MCDA)
     private double _preserveMaxPdiChipSeal;
     private double _preserveMaxPdiAC;
     private double _holdingMaxPdiAC;
 
+    // Related to Candidate Selection
     private double _csMaxSealCount;
     private double _csTextureThreshold;
     private double _csTextureFactor;  
@@ -117,7 +122,16 @@ public class Constants
         get { return _minLengthRehab; }
     }
 
-    
+    /// <summary>
+    /// Number of periods over which historical maintenance information in Input Set should be used in the
+    /// calculation of the Rehabilitation Needs Index. 
+    /// </summary>
+    public int HistoricalMaintenanceUsePeriods
+    {
+        get { return _histMaintUsePeriods; }  
+    }
+
+
     /// <summary>
     /// Minimum PDI threshold for below which Rehabilitation Needs Index is set to zero except if rut is above 15 mm
     /// </summary>
@@ -526,13 +540,15 @@ public class Constants
         _minSlaToTreatAc = Convert.ToDouble(lookupSets["candidate_selection"]["min_sla_to_treat_ac"]);
         _minSlaToTreatCs = Convert.ToDouble(lookupSets["candidate_selection"]["min_sla_to_treat_cs"]);
 
-       _minLengthRehab = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["min_length_rehab"]);
-       _minPdiForRehabAC = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["min_pdi_for_rehab_ac"]);
-       _minPdiForRehabCS = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["min_pdi_for_rehab_cs"]);
-       _minPdiForRehabOGPA = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["min_pdi_for_rehab_ogpa"]);
+        // Rehabilitation Needs Index related constants
+        _histMaintUsePeriods = Convert.ToInt32(lookupSets["rehab_needs_index"]["use_hist_maint_periods"]);
+        _minLengthRehab = Convert.ToDouble(lookupSets["rehab_needs_index"]["min_length_rehab"]);
+        _minPdiForRehabAC = Convert.ToDouble(lookupSets["rehab_needs_index"]["min_pdi_for_rehab_ac"]);
+        _minPdiForRehabCS = Convert.ToDouble(lookupSets["rehab_needs_index"]["min_pdi_for_rehab_cs"]);
+        _minPdiForRehabOGPA = Convert.ToDouble(lookupSets["rehab_needs_index"]["min_pdi_for_rehab_ogpa"]);
+        _excessRutThreshold = Convert.ToDouble(lookupSets["rehab_needs_index"]["excess_rut_threshold"]);
 
         // Related to TSS
-        _excessRutThreshold = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["excess_rut_threshold"]);        
         _rehabMinRniRank = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["rehab_min_rni_rank"]);
         _holdingRniRankPt1 = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["holding_rni_rank_pt1"]);
         _holdingRniRankPt2 = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["holding_rni_rank_pt2"]);

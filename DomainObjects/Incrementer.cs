@@ -22,12 +22,6 @@ public class Incrementer
 
     public RoadSegmentMC Increment(RoadSegmentMC segment, int period)
     {
-#pragma warning disable CS0219 // breakpoint anchor — see CLAUDE.md
-        if (segment.ElementIndex == 4028)
-        {
-            int kk = 9;
-        }
-#pragma warning restore CS0219
 
         // Increment all properties related to model parameters
         // Keep the code same order as the model parameter list
@@ -101,7 +95,7 @@ public class Incrementer
         double excessRut = Math.Max(0, segment.RutMeanObserved - rutThreshold);
         if (segment.PavementDistressIndex > 0)
         {
-            double pdiIncrement = 1.0 + (0.5 * excessRut);
+            double pdiIncrement = 0.5 + (0.1 * excessRut);
             segment.PavementDistressIndex = segment.PavementDistressIndex + pdiIncrement;
         }
 

@@ -59,12 +59,12 @@ public class TreatmentsTrigger
         }
         else
         {
-            return GetBirthdayTreatmentBlocksOrConcreteIfValid(segment, period);
+            return GetBirthdayTreatmentBlocksOrConcreteIfValid(segment, period, _frameworkModel.Lookups);
         }
 
     }
         
-    private List<TreatmentInstance> GetBirthdayTreatmentBlocksOrConcreteIfValid(RoadSegmentMC segment, int iPeriod)
+    private List<TreatmentInstance> GetBirthdayTreatmentBlocksOrConcreteIfValid(RoadSegmentMC segment, int iPeriod, Dictionary<string, Dictionary<string, object>> lookups)
     {
         List<TreatmentInstance> treatments = new List<TreatmentInstance>();
         
@@ -86,13 +86,18 @@ public class TreatmentsTrigger
                 throw new Exception($"Unexpected NextSurface type for birthday treatment for segment {segment.ElementIndex}. Expected 'blocks', 'concrete', or 'other', but got '{segment.NextSurface}'");
         }
 
+        var unitRateSet = lookups["unit_rates_general"];
+        if (!unitRateSet.ContainsKey(treatmentName)) throw new Exception($"Unit rate for Treatment '{treatmentName}' not found in lookup set 'unit_rates_general'.");
+        double unitRate = Convert.ToDouble(unitRateSet[treatmentName]);
+
         if (segment.SurfaceRemainingLife > 1) return treatments; // If the surface remaining life is greater than 1, do not add a treatment
         if (iPeriod < segment.EarliestTreatmentPeriod) return treatments; // If the period is less than the earliest treatment period, do not add a treatment
 
         //If we get here, a birthday treatment is valid
         double quantity = segment.AreaSquareMetre;
         bool forceTreatment = true;
-        TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, quantity, forceTreatment,  "Birthday treatment", "");
+        TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, quantity: quantity, unitRate: unitRate, 
+                                                            force: forceTreatment, reason: "Birthday treatment", comment: "");
         treatment.TreatmentSuitabilityScore = 102; // Set a high suitability score for second coat treatments
         
         treatments.Add(treatment);

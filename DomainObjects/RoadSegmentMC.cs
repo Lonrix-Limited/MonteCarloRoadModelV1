@@ -553,8 +553,11 @@ public class RoadSegmentMC
 
         if (this.SurfaceClass == "cs")
         {
-            // Do not consider surface treatment if pavemet distress is above specified threshold
-            if (this.PavementDistressIndex > constants.TSSPreserveMaxPdiChipseal) return 0.0;
+            // Do not consider surface treatment if pavement distress is above specified threshold
+            if (this.PavementDistressIndex > constants.MaxPDIForChipsealResurfacing) return 0.0;
+            if (this.SurfaceDistressIndex < constants.MinSdiToResurfaceCs) return 0.0; // If SDI is very low, then surface treatment need is zero regardless of PDI or rut depth
+            if (this.SurfaceAchievedLifePercent < constants.MinSlaToResurfaceCs) return 0.0; // If surface has not achieved a minimum percentage of its expected life, then surface treatment need is zero
+            if (this.RutMeanObserved > constants.MaxRutForPreservationCS) return 0.0; // If rut is above a certain threshold, then surface treatment need is zero
 
             // Do not consider surface treatment if number of layers is above specified threshold (stability risk).
             if (this.SurfaceNumberOfLayers > constants.MaxSealCountForChipSeal) return 0.0;
@@ -566,7 +569,11 @@ public class RoadSegmentMC
         }
         else if (this.SurfaceClass == "ac" || this.SurfaceClass == "ogpa" || this.SurfaceClass == "slurry")
         {
-            if (this.PavementDistressIndex > constants.TSSPreserveMaxPdiAC) return 0.0;
+            if (this.PavementDistressIndex > constants.MaxPDIforACorOGPAResurfacing) return 0.0;
+            if (this.SurfaceDistressIndex < constants.MinSdiToResurfaceACandOGPA) return 0.0; // If SDI is very low, then surface treatment need is zero regardless of PDI or rut depth
+            if (this.SurfaceAchievedLifePercent < constants.MinSlaToResurfaceACandOGPA) return 0.0; // If surface has not achieved a minimum percentage of its expected life, then surface treatment need is zero
+            if (this.RutMeanObserved > constants.MaxRutForPreservationAC) return 0.0; // If rut is above a certain threshold, then surface treatment need is zero
+
             return Math.Max(0, baseSNI);
         }
         else

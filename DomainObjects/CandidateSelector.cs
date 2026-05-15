@@ -16,6 +16,7 @@ public static class CandidateSelector
         // the CURRENT period. Therefore, we need to subtract 1 from periodsToNextTreatment to get the correct value for the next period.
         periodsToNextTreatment = periodsToNextTreatment - 1;
         if (periodsToNextTreatment <= constants.CSMinPeriodsToNextTreat) { return "committed near future"; }
+        if (segment.LengthInMetre < constants.CSMinLengthToTreatAny) { return "segment too short"; }
 
         if (TriggerChipseals.NextSurfacingIsChipsealTreatment(segment))
         {

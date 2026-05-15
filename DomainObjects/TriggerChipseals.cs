@@ -21,14 +21,14 @@ public static class TriggerChipseals
             // If we are triggering a ChipSeal treatment, then we need to check if a second coat after Rehabilitation or a follow-up chipseal after Preseal Repairs should be added.
             // Check if second coat after Rehabilitation should be added. If so, since we are forcing it, do not look
             // for other candidate treatments
-            AddSecondCoatIfValid(segment, period, triggeredTreatments);
+            AddSecondCoatIfValid(segment, period, triggeredTreatments, lookups);
             if (triggeredTreatments.Count > 0) return triggeredTreatments;
             
             //-------------------------------------- Other Treatments if we are not adding a second coat --------------------------------------
 
-            AddPreservationChipsealIfValid(segment, domainModel, period, triggeredTreatments);
+            AddPreservationChipsealIfValid(segment, domainModel, period, triggeredTreatments, lookups);
 
-            AddPresealRepairIfValid(segment, domainModel, period, triggeredTreatments);
+            AddPresealRepairIfValid(segment, domainModel, period, triggeredTreatments, lookups);
 
             AddRehabilitationIfValid(segment, domainModel, period, triggeredTreatments, lookups);
 
@@ -63,7 +63,8 @@ public static class TriggerChipseals
         }
     }
 
-    private static void AddRehabilitationIfValid(RoadSegmentMC segment, MonteCarloRoadModelV1 domainModel, int iPeriod, List<TreatmentInstance> treatments, Dictionary<string, Dictionary<string, object>> lookups)
+    private static void AddRehabilitationIfValid(RoadSegmentMC segment, MonteCarloRoadModelV1 domainModel, int iPeriod, List<TreatmentInstance> treatments, 
+                                                 Dictionary<string, Dictionary<string, object>> lookups)
     {
         try
         {
@@ -94,7 +95,8 @@ public static class TriggerChipseals
         }
     }
 
-    private static void AddPresealRepairIfValid(RoadSegmentMC segment, MonteCarloRoadModelV1 domainModel, int iPeriod, List<TreatmentInstance> treatments)
+    private static void AddPresealRepairIfValid(RoadSegmentMC segment, MonteCarloRoadModelV1 domainModel, int iPeriod, List<TreatmentInstance> treatments, 
+                                                Dictionary<string, Dictionary<string, object>> lookups)
     {
         try
         {
@@ -124,8 +126,13 @@ public static class TriggerChipseals
             // PDI is a percentage value that indicates the fraction of the area that needs pre-sealing
             double treatmentAreaFraction = segment.PavementDistressIndex / 100.0;
             string treatmentName = "cs_preseal";
+
+            var unitRateSet = lookups["unit_rates_general"];
+            if (!unitRateSet.ContainsKey(treatmentName)) throw new Exception($"Unit rate for Treatment '{treatmentName}' not found in lookup set 'unit_rates_general'.");
+            double unitRate = Convert.ToDouble(unitRateSet[treatmentName]);
+
             double quantity = segment.AreaSquareMetre * treatmentAreaFraction;
-            TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, quantity, false, reason, comment);
+            TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, quantity, unitRate, false, reason, comment);
             treatment.TreatmentSuitabilityScore = tssScore;
             treatments.Add(treatment);
         }
@@ -135,14 +142,15 @@ public static class TriggerChipseals
         }
     }
 
-    private static void AddPreservationChipsealIfValid(RoadSegmentMC segment, MonteCarloRoadModelV1 domainModel, int iPeriod, List<TreatmentInstance> treatments)
+    private static void AddPreservationChipsealIfValid(RoadSegmentMC segment, MonteCarloRoadModelV1 domainModel, int iPeriod, List<TreatmentInstance> treatments, 
+                                                        Dictionary<string, Dictionary<string, object>> lookups)
     {
         try
         {
             string treatmentName = "cs_preserve";
 
             // For preservation, if PDI is above the maximum threshold, do not add a treatment
-            if (segment.PavementDistressIndex > domainModel.Constants.TSSPreserveMaxPdiChipseal) return;
+            if (segment.PavementDistressIndex > domainModel.Constants.MaxPDIForChipsealResurfacing) return;
 
             double tssScore = TreatmentSuitabilityScorer.GetTSSForPreservationTreatment(segment, domainModel, iPeriod);
 
@@ -150,8 +158,12 @@ public static class TriggerChipseals
             string reason = $"SLA={Math.Round(segment.SurfaceAchievedLifePercent, 1)}";
             string comment = $"SDI={Math.Round(sdi, 1)}, TSS={Math.Round(tssScore, 2)}";
 
+            var unitRateSet = lookups["unit_rates_general"];
+            if (!unitRateSet.ContainsKey(treatmentName)) throw new Exception($"Unit rate for Treatment '{treatmentName}' not found in lookup set 'unit_rates_general'.");
+            double unitRate = Convert.ToDouble(unitRateSet[treatmentName]);
+
             double quantity = segment.AreaSquareMetre;
-            TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, quantity, false, reason, comment);
+            TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, quantity, unitRate, false, reason, comment);
 
             treatment.TreatmentSuitabilityScore = tssScore;
             treatments.Add(treatment);
@@ -162,7 +174,7 @@ public static class TriggerChipseals
         }
     }
 
-    private static void AddSecondCoatIfValid(RoadSegmentMC segment, int iPeriod, List<TreatmentInstance> treatments)
+    private static void AddSecondCoatIfValid(RoadSegmentMC segment, int iPeriod, List<TreatmentInstance> treatments, Dictionary<string, Dictionary<string, object>> lookups)
     {
         try
         {
@@ -178,9 +190,13 @@ public static class TriggerChipseals
                     reason = "Second-Coat on Preseal Repairs";
                 }
 
+                var unitRateSet = lookups["unit_rates_general"];
+                if (!unitRateSet.ContainsKey(treatmentName)) throw new Exception($"Unit rate for Treatment '{treatmentName}' not found in lookup set 'unit_rates_general'.");
+                double unitRate = Convert.ToDouble(unitRateSet[treatmentName]);
+
                 double quantity = segment.AreaSquareMetre;
 
-                TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, quantity, true, reason, reason);
+                TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, quantity, unitRate, true, reason, reason);
                 treatment.TreatmentSuitabilityScore = 102; // Set a high suitability score for second coat treatments
                 treatments.Add(treatment);
             }

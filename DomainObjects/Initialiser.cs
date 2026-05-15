@@ -122,39 +122,23 @@ public class Initialiser
     private double GetInitialRuttingValue(RoadSegmentMC segment)
     {
         double surveyAge = GetHSDSurveyAge(segment);
-        double resetValuRaw = 0;
-        bool needsReset = false;
-
+        
         // If segment has been rehabilitated, return the lookup value for the rutting reset
         bool hasBeenRehabilitated = segment.PavementAge < surveyAge;
         if (hasBeenRehabilitated) {
-            resetValuRaw = Resetter.GetRutResetValue(segment, _domainModel.SubModels, "rehab", _domainModel.Constants, _frameworkModel.Random);
-            needsReset = true;
+            return Resetter.GetRutResetValue(segment, _domainModel.SubModels, "rehab", _domainModel.Constants, _frameworkModel.Random, 0);            
         }
 
-        double ruttingRaw = segment.RutMeanLatent;
+        
 
         // If segment has been resurfaced, determine the rutting exceedance and the reset
         bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
         if (hasBeenResurfaced)
         {
-            resetValuRaw = Resetter.GetRutResetValue(segment, _domainModel.SubModels, "resurf", _domainModel.Constants, _frameworkModel.Random);            
-            needsReset = true;
+            return  Resetter.GetRutResetValue(segment, _domainModel.SubModels, "resurf", _domainModel.Constants, _frameworkModel.Random, 0);            
         }
 
-        if (needsReset)
-        {
-            // For resets during initialisation, we want to avoid any anomalous reset values that are much higher than the raw value, as this may trigger another treatment
-            // in the short term. So reset to maximum a little higher than the raw value, plus a random component to avoid having many segments with exactly the same reset value.
-            double maxAcceptableValue = ruttingRaw + 1;
-            if (resetValuRaw > maxAcceptableValue) resetValuRaw = maxAcceptableValue + _frameworkModel.Random.NextDouble();
-            return resetValuRaw;
-        }
-        else
-        {
-            // If segment has not been rehabilitated or resurfaced, use the raw rutting value
-            return ruttingRaw;
-        }            
+        return segment.RutMeanLatent;
     }
 
 
@@ -209,44 +193,27 @@ public class Initialiser
     private double GetInitialIRIValue(RoadSegmentMC segment)
     {
         double surveyAge = GetHSDSurveyAge(segment);
-        double resetValuRaw = 0;
-        bool needsReset = false;
-
+        
         // If segment has been rehabilitated, return the lookup value for the IRI reset
         bool hasBeenRehabilitated = segment.PavementAge < surveyAge;
         if (hasBeenRehabilitated)
         {
             // Estimate the treatment name based on material type            
             string treatmentName = segment.SurfaceClass + "_rehab";          
-            resetValuRaw = Resetter.GetIRIResetValue(segment, _domainModel.SubModels, treatmentName, _domainModel.Constants, _frameworkModel.Random);
-            needsReset = true;
+            return Resetter.GetIRIResetValue(segment, _domainModel.SubModels, treatmentName, _domainModel.Constants, _frameworkModel.Random, 0);            
         }
-
-        double iriRaw = segment.IRIMeanLatent;
-
+        
         // If segment has been resurfaced, determine the IRI exceedance and the reset
         bool hasBeenResurfaced = segment.SurfaceAge < surveyAge;
         if (hasBeenResurfaced)
         {
             // Estimate the treatment name based on material type
             string treatmentName = segment.SurfaceClass + "_resurf";            
-            resetValuRaw = Resetter.GetIRIResetValue(segment, _domainModel.SubModels, treatmentName, _domainModel.Constants, _frameworkModel.Random);
-            needsReset = true;
+            return Resetter.GetIRIResetValue(segment, _domainModel.SubModels, treatmentName, _domainModel.Constants, _frameworkModel.Random, 0);            
         }
 
-        if (needsReset)
-        {
-            // For resets during initialisation, we want to avoid any anomalous reset values that are much higher than the raw value, as this may trigger another treatment
-            // in the short term. So reset to maximum a little higher than the raw value, plus a random component to avoid having many segments with exactly the same reset value.
-            double maxAcceptableValue = iriRaw + 0.25;
-            if (resetValuRaw > maxAcceptableValue) resetValuRaw = maxAcceptableValue + 0.1 * _frameworkModel.Random.NextDouble();
-            return resetValuRaw;
-        }
-        else
-        {
-            // If segment has not been rehabilitated or resurfaced, use the raw rutting value
-            return iriRaw;
-        }
+        return segment.IRIMeanLatent;
+
     }
 
 

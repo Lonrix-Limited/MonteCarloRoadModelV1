@@ -21,9 +21,9 @@ public static class TriggerAsphalts
         {
             List<TreatmentInstance> triggeredTreatments = new List<TreatmentInstance>();
                        
-            AddPreservationThinACIfValid(segment, domainModel, period, triggeredTreatments);
-            AddHoldingThinACIfValid(segment, frameworkModel, domainModel, period, triggeredTreatments);
-            AddAcHeavyMaintenanceIfValid(segment, period, domainModel, triggeredTreatments, infoFromModel);
+            AddPreservationThinACIfValid(segment, domainModel, period, triggeredTreatments, lookups);
+            AddHoldingThinACIfValid(segment, frameworkModel, domainModel, period, triggeredTreatments, lookups);
+            AddAcHeavyMaintenanceIfValid(segment, period, domainModel, triggeredTreatments, infoFromModel, lookups);
             AddRehabilitationIfValid(segment, domainModel, period, triggeredTreatments, lookups);
 
             return triggeredTreatments;
@@ -57,7 +57,8 @@ public static class TriggerAsphalts
         }
     }
 
-    private static void AddRehabilitationIfValid(RoadSegmentMC segment, MonteCarloRoadModelV1 domainModel, int iPeriod, List<TreatmentInstance> treatments, Dictionary<string, Dictionary<string, object>> lookups)
+    private static void AddRehabilitationIfValid(RoadSegmentMC segment, MonteCarloRoadModelV1 domainModel, int iPeriod, List<TreatmentInstance> treatments, 
+        Dictionary<string, Dictionary<string, object>> lookups)
     {
         try
         {
@@ -89,7 +90,8 @@ public static class TriggerAsphalts
         }
     }
 
-    private static void AddHoldingThinACIfValid(RoadSegmentMC segment, ModelBase frameworkModel, MonteCarloRoadModelV1 domainModel, int iPeriod, List<TreatmentInstance> treatments)
+    private static void AddHoldingThinACIfValid(RoadSegmentMC segment, ModelBase frameworkModel, MonteCarloRoadModelV1 domainModel, int iPeriod, 
+                                                List<TreatmentInstance> treatments, Dictionary<string, Dictionary<string, object>> lookups)
     {
         try
         {
@@ -118,8 +120,13 @@ public static class TriggerAsphalts
 
             double overlayQuantity = quantity;
             double repairQuantity = quantity * Math.Min(100, segment.PavementDistressIndex) / 100;
-            double acOverlayUnitRate = frameworkModel.TreatmentTypes[resurfCode].UnitRate;
-            double acRepairUnitRate = frameworkModel.TreatmentTypes[hmaintCode].UnitRate;
+
+            var unitRateSet = lookups["unit_rates_general"];
+            if (!unitRateSet.ContainsKey(resurfCode)) throw new Exception($"Unit rate for Treatment '{resurfCode}' not found in lookup set 'unit_rates_general'.");
+            double acOverlayUnitRate = Convert.ToDouble(unitRateSet[resurfCode]);
+
+            if (!unitRateSet.ContainsKey(hmaintCode)) throw new Exception($"Unit rate for Treatment '{hmaintCode}' not found in lookup set 'unit_rates_general'.");
+            double acRepairUnitRate = Convert.ToDouble(unitRateSet[hmaintCode]);
 
             double overlayCost = overlayQuantity * acOverlayUnitRate;
             double repairCost = repairQuantity * acRepairUnitRate;
@@ -127,15 +134,11 @@ public static class TriggerAsphalts
             double totalCost = overlayCost + repairCost;
 
             double dummyArea = totalCost; // Dummy area which is effectively the cost
+            double dummyUnitRate = 1; // Dummy unit rate so that cost is equal to total cost
 
-            // Check to ensure that the dummy rate for the combined treatment is 1.0
-            double dummyUnitRate = frameworkModel.TreatmentTypes["ac_holding"].UnitRate;
-            if (dummyUnitRate != 1.0)
-            {
-                throw new InvalidOperationException($"Dummy unit rate for ThinAC treatment which combined overlay and repairs should be 1.0, but it is {dummyUnitRate}");
-            }
-
-            TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, dummyArea, false, reason, comment);
+            TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, 
+                                                                quantity: dummyArea, unitRate: dummyUnitRate, 
+                                                                force: false, reason: reason, comment: comment);
 
             // Assign the relative fractions of the cost to the appropriate budget categories
             decimal repairFraction = Convert.ToDecimal(repairCost / totalCost);
@@ -157,14 +160,15 @@ public static class TriggerAsphalts
         }
     }
 
-    private static void AddPreservationThinACIfValid(RoadSegmentMC segment, MonteCarloRoadModelV1 domainModel, int iPeriod, List<TreatmentInstance> treatments)
+    private static void AddPreservationThinACIfValid(RoadSegmentMC segment, MonteCarloRoadModelV1 domainModel, int iPeriod, List<TreatmentInstance> treatments,
+                                                    Dictionary<string, Dictionary<string, object>> lookups)
     {
         try
         {
             string treatmentName = segment.SurfaceClassForTreatment + "_resurf";
 
             // For preservation, if PDI is above the maximum threshold, do not add a treatment
-            if (segment.PavementDistressIndex > domainModel.Constants.TSSPreserveMaxPdiAC) return;
+            if (segment.PavementDistressIndex > domainModel.Constants.MaxPDIforACorOGPAResurfacing) return;
 
             // If asphalt overlay is not allowed because of too high deflection etc, do not add a treatment
             if (segment.CanDoThinACOverlay == 0) return;
@@ -180,7 +184,11 @@ public static class TriggerAsphalts
 
             double overlayQuantity = segment.AreaSquareMetre;
 
-            TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, overlayQuantity, false, reason, comment);
+            var unitRateSet = lookups["unit_rates_general"];
+            if (!unitRateSet.ContainsKey(treatmentName)) throw new Exception($"Unit rate for Treatment '{treatmentName}' not found in lookup set 'unit_rates_general'.");
+            double unitRate = Convert.ToDouble(unitRateSet[treatmentName]);
+
+            TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, overlayQuantity, unitRate:unitRate, false, reason, comment);
 
             treatment.TreatmentSuitabilityScore = tssScore;
             treatments.Add(treatment);
@@ -192,7 +200,8 @@ public static class TriggerAsphalts
     }
 
     private static void AddAcHeavyMaintenanceIfValid(RoadSegmentMC segment, int iPeriod, MonteCarloRoadModelV1 domainModel,
-        List<TreatmentInstance> treatments, Dictionary<string, object> infoFromModel)
+                                                     List<TreatmentInstance> treatments, Dictionary<string, object> infoFromModel,
+                                                     Dictionary<string, Dictionary<string, object>> lookups)
     {
         try
         {
@@ -235,7 +244,12 @@ public static class TriggerAsphalts
             string comment = $"PDI={Math.Round(segment.PavementDistressIndex, 1)}, TSS={Math.Round(tssScore, 2)}";
 
             double quantity = segment.AreaSquareMetre * presealAreaFraction;
-            TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, quantity, false, reason, comment);
+
+            var unitRateSet = lookups["unit_rates_general"];
+            if (!unitRateSet.ContainsKey(treatmentName)) throw new Exception($"Unit rate for Treatment '{treatmentName}' not found in lookup set 'unit_rates_general'.");
+            double unitRate = Convert.ToDouble(unitRateSet[treatmentName]);
+
+            TreatmentInstance treatment = new TreatmentInstance(segment.ElementIndex, treatmentName, iPeriod, quantity, unitRate: unitRate, false, reason, comment);
             treatment.TreatmentSuitabilityScore = tssScore;
             treatments.Add(treatment);
         }

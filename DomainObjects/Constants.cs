@@ -14,7 +14,9 @@ public class Constants
 
     #region Backing Variables
 
-    private DateTime _baseDate; 
+    // General
+    private DateTime _baseDate;
+    private int _minimiseStochasticEffectsPeriod;
     
     // Related to Candidate Selection
     private double _minSlaToTreatAc;
@@ -22,6 +24,7 @@ public class Constants
     private double _min_periods_to_next_treat;
     private double _min_sdi_to_treat;
     private double _min_pdi_to_treat;
+    private double _min_length_to_treat_any;
 
 
     // Related to Rehabilitation Needs Index and TSS
@@ -32,21 +35,28 @@ public class Constants
     private double _holdingRniRankPt2;
     private double _holdingRniRankPt3;
 
-    //Related to TSS(Treatment Suitability Scores - MCDA)
-    private double _preserveMaxPdiChipSeal;
-    private double _preserveMaxPdiAC;
-    private double _holdingMaxPdiAC;
-
-    // Related to Candidate Selection
+    // Related to Surfacing Needs Index but also used for TSS
     private double _csMaxSealCount;
     private double _csTextureThreshold;
-    private double _csTextureFactor;  
+    private double _csTextureFactor;
+    private double _minSlaToResurfaceCs;
+    private double _minSlaToResurfaceAc;
+    private double _minSdiToResurfaceCs;
+    private double _minSdiToResurfaceAc;
+    private double _preserveMaxPdiChipSeal;
+    private double _preserveMaxPdiAC;
+    private double _maxRutForPreservationCS;
+    private double _maxRutForPreservationAC;
 
+    //Related to TSS(Treatment Suitability Scores - MCDA)
+
+    private double _holdingMaxPdiAC;
+
+    // Related to Candidate Selection    
     private double _minLengthRehab;
     private double _minPdiForRehabAC;
     private double _minPdiForRehabCS;
     private double _minPdiForRehabOGPA;
-
 
     // Related to MCDA Treatment Triggering
     private double _maxSlaForACHeavyMaint;
@@ -61,14 +71,28 @@ public class Constants
 
     #endregion
 
+    #region General Constants
+
     /// <summary>
     /// Base date for the model run. Maps to lookup set "gernal" and setting key "base_date".
     /// </summary>
     public DateTime BaseDate { get { return _baseDate; } }
 
+    // Number of periods at the start of the model run to apply a more deterministic deterioration to reduce stochastic effects at
+    // the start of the model run when all roads are in perfect condition. Maps to lookup set "general" and setting key "minimise_stochastic_effects_period".
+    // Currently, this affects only resets. If the reset is applied when the period is less than or equal to this value, then the reset is taken
+    // as the mean of 5 draws instead of a single draw (which could assign a really bad reset causing another treatment to be triggered within the 
+    // short term FWP period
+    public int MinimiseStochasticEffectsPeriod
+    {
+        get { return _minimiseStochasticEffectsPeriod; }
+    }
+
+    #endregion
+
     #region Candidate Selection related constants
 
-        
+
     /// <summary>
     /// Minimum Surface Life Achieved to consider for AC - gatekeeper that can be used to throttle treatments
     /// </summary>
@@ -84,7 +108,6 @@ public class Constants
     {
         get { return _min_periods_to_next_treat; }
     }
-
 
     /// <summary>
     /// Minimum Surface Life Achieved to consider for Chipseals - gatekeeper that can be used to throttle treatments
@@ -108,6 +131,114 @@ public class Constants
     public double CSMinPDIToTreat
     {
         get { return _min_pdi_to_treat; }
+    }
+
+    /// <summary>
+    /// Minimum length, in metres, to consider an element for ANY treatment. Note this may be overriden for Rehabs by a similar flag that
+    /// applies specifically to Rehabs (MinimumLengthForRehab). 
+    /// </summary>
+    public double CSMinLengthToTreatAny
+    {
+        get { return _min_length_to_treat_any; }
+    }
+
+    #endregion
+
+    #region Surfacing Needs Index related constants
+
+    /// <summary>
+    /// Maximum number of previous seals for a ChipSeal treatment to be considered (stability concern if too many seals already). 
+    /// Set this to a high value to effectively have no maximum.
+    /// </summary>
+    public double MaxSealCountForChipSeal
+    {
+        get { return _csMaxSealCount; }
+    }
+
+    /// <summary>
+    /// Texture threshold below which Surface Needs index for a Chipseal is increased since it points to flushing risk
+    /// </summary>
+    public double TextureThresholdForChipSeal
+    {
+        get { return _csTextureThreshold; }
+    }
+
+    /// <summary>
+    /// Multiplier for Surface Needs Index for a Chipseal when Texture is below the threshold, to account for increased risk of flushing. 
+    /// Only has an influence if texture if below the TextureThresholdForChipSeal threshold. Set this to zero to have no increase in Surface Needs Index due to low texture. 
+    /// </summary>
+    public double TexturePenaltyFactorForChipSeal
+    {
+        get { return _csTextureFactor; }
+    }
+
+    /// <summary>
+    /// Minimum Surface Life Achieved to consider for resurfacing treatments on Chipseals. Below this value the 
+    /// Surfacing Needs Index is zero for Chipseals.
+    /// </summary>
+    public double MinSlaToResurfaceCs
+    {
+        get { return _minSlaToResurfaceCs; }
+    }
+
+
+    /// <summary>
+    /// Minimum Surface Life Achieved to consider for resurfacing treatments on AC and OGPA. Below this value the
+    /// Surfacing Needs Index is zero for AC and OGPA. 
+    /// </summary>
+    public double MinSlaToResurfaceACandOGPA
+    {
+        get { return _minSlaToResurfaceAc; }
+    }
+
+    /// <summary>
+    /// Minimum Surface Distress Index to consider for resurfacing treatments on Chipseals. Below this value the
+    /// Surfacing Needs Index is zero for Chipseals. 
+    /// </summary>
+    public double MinSdiToResurfaceCs
+    {
+        get { return _minSdiToResurfaceCs; }
+    }
+
+    /// <summary>
+    /// Minimum Surface Distress Index to consider for resurfacing treatments on AC and OGPA. Below this value the
+    /// surfacing Needs Index is zero for AC and OGPA.
+    /// </summary>
+    public double MinSdiToResurfaceACandOGPA
+    {
+        get { return _minSdiToResurfaceAc; }
+    }
+
+    /// <summary>
+    /// Do not consider Preservation ChipSeal treatment if PDI is above this value 
+    /// </summary>
+    public double MaxPDIForChipsealResurfacing
+    {
+        get { return _preserveMaxPdiChipSeal; }
+    }
+
+    /// <summary>
+    /// Do not consider Preservation AC treatment if PDI is above this value 
+    /// </summary>
+    public double MaxPDIforACorOGPAResurfacing
+    {
+        get { return _preserveMaxPdiAC; }
+    }
+
+    /// <summary>
+    /// Maximum rut depth for Preservation AC treatment to be considered
+    /// </summary>
+    public double MaxRutForPreservationAC
+    {
+        get { return _maxRutForPreservationAC; }
+    }
+
+    /// <summary>
+    /// Maximum rut depth for Preservation ChipSeal treatment to be considered
+    /// </summary>
+    public double MaxRutForPreservationCS
+    {
+        get { return _maxRutForPreservationCS; }
     }
 
     #endregion
@@ -197,25 +328,7 @@ public class Constants
     {
         get { return _holdingRniRankPt3; }
     }
-
         
-            
-    /// <summary>
-    /// Do not consider Preservation ChipSeal treatment if PDI is above this value 
-    /// </summary>
-    public double TSSPreserveMaxPdiChipseal
-    {
-        get { return _preserveMaxPdiChipSeal; }
-    }
-
-    /// <summary>
-    /// Do not consider Preservation AC treatment if PDI is above this value 
-    /// </summary>
-    public double TSSPreserveMaxPdiAC
-    {
-        get { return _preserveMaxPdiAC; }
-    }
-
     /// <summary>
     /// Do not consider Holding AC treatment if PDI is above this value 
     /// </summary>
@@ -223,33 +336,6 @@ public class Constants
     {
         get { return _holdingMaxPdiAC; }
     }
-
-    /// <summary>
-    /// Maximum number of previous seals for a ChipSeal treatment to be considered (stability concern if too many seals already). 
-    /// Set this to a high value to effectively have no maximum.
-    /// </summary>
-    public double MaxSealCountForChipSeal
-    {
-        get { return _csMaxSealCount; }
-    }
-
-    /// <summary>
-    /// Texture threshold below which Surface Needs index for a Chipseal is increased since it points to flushing risk
-    /// </summary>
-    public double TextureThresholdForChipSeal
-    {
-        get { return _csTextureThreshold; }
-    }
-
-    /// <summary>
-    /// Multiplier for Surface Needs Index for a Chipseal when Texture is below the threshold, to account for increased risk of flushing. 
-    /// Only has an influence if texture if below the TextureThresholdForChipSeal threshold. Set this to zero to have no increase in Surface Needs Index due to low texture. 
-    /// </summary>
-    public double TexturePenaltyFactorForChipSeal
-    {
-        get { return _csTextureFactor; }
-    }
-
 
     /// <summary>
     /// Maximum Surface Life Achieved % to consider AC Heavy Maintenance (i.e. do not consider AC Heavy Maintenance if SLA is above this value)
@@ -530,15 +616,19 @@ public class Constants
 
 
     public Constants(Dictionary<string, Dictionary<string, object>> lookupSets)
-    {        
+    {
+
+        // General constants
         _baseDate = JCass_Core.Utils.HelperMethods.ParseDateNoTime(lookupSets["general"]["base_date"]);
-        
+        _minimiseStochasticEffectsPeriod = Convert.ToInt32(lookupSets["general"]["minimise_stochastic_effects_period"]);
+
         // Candidate Selection related constants
         _min_periods_to_next_treat = Convert.ToInt32(lookupSets["candidate_selection"]["min_periods_to_next_treat"]);
         _min_sdi_to_treat = Convert.ToDouble(lookupSets["candidate_selection"]["min_sdi_to_treat"]);
         _min_pdi_to_treat = Convert.ToDouble(lookupSets["candidate_selection"]["min_pdi_to_treat"]);
         _minSlaToTreatAc = Convert.ToDouble(lookupSets["candidate_selection"]["min_sla_to_treat_ac"]);
         _minSlaToTreatCs = Convert.ToDouble(lookupSets["candidate_selection"]["min_sla_to_treat_cs"]);
+        _min_length_to_treat_any = Convert.ToDouble(lookupSets["candidate_selection"]["min_length_to_treat_any"]);
 
         // Rehabilitation Needs Index related constants
         _histMaintUsePeriods = Convert.ToInt32(lookupSets["rehab_needs_index"]["use_hist_maint_periods"]);
@@ -548,20 +638,27 @@ public class Constants
         _minPdiForRehabOGPA = Convert.ToDouble(lookupSets["rehab_needs_index"]["min_pdi_for_rehab_ogpa"]);
         _excessRutThreshold = Convert.ToDouble(lookupSets["rehab_needs_index"]["excess_rut_threshold"]);
 
+        // Surfacing Needs Index related constants (some of these also influence TSS)
+        _csMaxSealCount = Convert.ToInt32(lookupSets["surfacing_needs_index"]["cs_max_seal_count"]);
+        _csTextureThreshold = Convert.ToDouble(lookupSets["surfacing_needs_index"]["cs_texture_threshold"]);
+        _csTextureFactor = Convert.ToDouble(lookupSets["surfacing_needs_index"]["cs_texture_penalty_factor"]);
+        _minSlaToResurfaceCs = Convert.ToDouble(lookupSets["surfacing_needs_index"]["min_sla_to_resurface_cs"]);
+        _minSlaToResurfaceAc = Convert.ToDouble(lookupSets["surfacing_needs_index"]["min_sla_to_resurface_ac"]);
+        _minSdiToResurfaceCs = Convert.ToDouble(lookupSets["surfacing_needs_index"]["min_sdi_to_resurface_cs"]);
+        _minSdiToResurfaceAc = Convert.ToDouble(lookupSets["surfacing_needs_index"]["min_sdi_to_resurface_ac"]);
+        _preserveMaxPdiChipSeal = Convert.ToDouble(lookupSets["surfacing_needs_index"]["preserve_max_pdi_chipseal"]);
+        _preserveMaxPdiAC = Convert.ToDouble(lookupSets["surfacing_needs_index"]["preserve_max_pdi_ac"]);
+        _maxRutForPreservationAC = Convert.ToDouble(lookupSets["surfacing_needs_index"]["max_rut_ac"]);
+        _maxRutForPreservationCS = Convert.ToDouble(lookupSets["surfacing_needs_index"]["max_rut_cs"]);
+
         // Related to TSS
         _rehabMinRniRank = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["rehab_min_rni_rank"]);
         _holdingRniRankPt1 = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["holding_rni_rank_pt1"]);
         _holdingRniRankPt2 = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["holding_rni_rank_pt2"]);
         _holdingRniRankPt3 = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["holding_rni_rank_pt3"]);
-                
-        _preserveMaxPdiChipSeal = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["preserve_max_pdi_chipseal"]);
-        _preserveMaxPdiAC = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["preserve_max_pdi_ac"]);
         _holdingMaxPdiAC = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["holding_max_pdi_ac"]);
-
-        _csMaxSealCount = Convert.ToInt32(lookupSets["treatment_suitability_scores"]["cs_max_seal_count"]);
-        _csTextureThreshold = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["cs_texture_threshold"]);
-        _csTextureFactor = Convert.ToDouble(lookupSets["treatment_suitability_scores"]["cs_texture_penalty_factor"]);
-
+               
+                
         // Related to MCDA Treatment Triggering
         _maxSlaForACHeavyMaint = Convert.ToDouble(lookupSets["mcda_treatment_triggering"]["ac_hmaint_maximum_sla"]);
         _minPeriodsBetweenACHeavyMaint = Convert.ToInt32(lookupSets["mcda_treatment_triggering"]["ac_hmaint_min_periods_between"]);

@@ -58,7 +58,7 @@ public class Resetter
         //--------------------------------------------------------------------------------------------------------------------------------------------
 
         // Rut Depth                
-        double newValue = GetRutResetValue(segment, _domainModel.SubModels, treatment.TreatmentName, _domainModel.Constants, _frameworkModel.Random); //Reset value.
+        double newValue = GetRutResetValue(segment, _domainModel.SubModels, treatment.TreatmentName, _domainModel.Constants, _frameworkModel.Random, period); //Reset value.
         segment.RutIncrement = Incrementer.GetRutIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants); //Get new increment for new eposode.        
         double residual = Incrementer.GetTextureResidual(_domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants, newValue);
         segment.RutMeanLatent = newValue;
@@ -67,7 +67,7 @@ public class Resetter
 
 
         // IRI 
-        newValue = GetIRIResetValue(segment, _domainModel.SubModels, treatment.TreatmentName, _domainModel.Constants, _frameworkModel.Random); //Reset value.
+        newValue = GetIRIResetValue(segment, _domainModel.SubModels, treatment.TreatmentName, _domainModel.Constants, _frameworkModel.Random, period); //Reset value.
         segment.IRIIncrement = Incrementer.GetIRIIncrementForEpisode(segment, _domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants); //Get new increment for new eposode.        
         residual = Incrementer.GetIRIResidual(_domainModel.SubModels, _frameworkModel.Random, _domainModel.Constants, newValue);
         segment.IRIMeanLatent = newValue;
@@ -82,6 +82,11 @@ public class Resetter
         segment.TextureMeanLatent = newValue;
         segment.TextureMeanObserved = segment.TextureMeanLatent + residual;
         segment.TextureIncrementEpisodeLength = 1;  // Reset episode length to 1 since we are drawing a new increment for the episode
+
+        // Reset PDI and SDI based on treatment type. 
+        ResetPavementDistressIndex(segment, _domainModel.SubModels, treatment.TreatmentName, _domainModel.Constants, _frameworkModel.Random, isRehabTreatment);
+        ResetSurfacingDistressIndex(segment, _domainModel.SubModels, treatment.TreatmentName, _domainModel.Constants, _frameworkModel.Random);
+
 
         // Maintenance
         _domainModel.MaintenanceModel.UpdateRoutineMaintenanceExtents(segment);
@@ -203,7 +208,7 @@ public class Resetter
     /// <param name="random">Random number generator to use for the simulation</param>
     /// <returns>The simulated Rut Reset value</returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public static double GetRutResetValue(RoadSegmentMC segment, SubModelDefinitions subModels, string treatmentName, Constants constants, Random random)
+    public static double GetRutResetValue(RoadSegmentMC segment, SubModelDefinitions subModels, string treatmentName, Constants constants, Random random, int period)
     {
         
         var inputParameters = GetInputParametersForSegment(segment);
@@ -219,12 +224,42 @@ public class Resetter
 
         if (treatmentName.Contains("rehab"))
         {
-            resettedValue = subModels.RutResetSimulatorRehab.GetSimulatedValue(inputParameters, random);
+            if (period <= constants.MinimiseStochasticEffectsPeriod)
+            {
+                // Take the average of multiple draws to reduce stochasticity in the early periods after rehab, which can have a big impact on
+                // model outputs and make it more difficult to identify the underlying drivers of model results.
+                double meanReset = 0;
+                int nDraws = 5;
+                for (int i = 0; i < nDraws; i++)
+                {
+                    meanReset += subModels.RutResetSimulatorRehab.GetSimulatedValue(inputParameters, random);
+                }
+                resettedValue = meanReset / nDraws; 
+            }
+            else
+            {
+                resettedValue = subModels.RutResetSimulatorRehab.GetSimulatedValue(inputParameters, random);
+            }                
         }
         else
         {
-            // Presume all other treatment types (holding, preseal repairs etc) reset as for resurfacing.
-            resettedValue = subModels.RutResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
+            if (period <= constants.MinimiseStochasticEffectsPeriod)
+            {
+                // Take the average of multiple draws to reduce stochasticity in the early periods after rehab, which can have a big impact on
+                // model outputs and make it more difficult to identify the underlying drivers of model results.
+                double meanReset = 0;
+                int nDraws = 5;
+                for (int i = 0; i < nDraws; i++)
+                {
+                    meanReset += subModels.RutResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
+                }
+                resettedValue = meanReset / nDraws;
+            }
+            else
+            {
+                // Presume all other treatment types (holding, preseal repairs etc) reset as for resurfacing.
+                resettedValue = subModels.RutResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
+            }
         }
                 
         resettedValue = resettedValue + adjustment; // Apply the treatment specific adjustment to the reset value
@@ -248,7 +283,7 @@ public class Resetter
     /// <param name="random">Random number generator to use for the simulation</param>
     /// <returns>The simulated IRI Reset value</returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public static double GetIRIResetValue(RoadSegmentMC segment, SubModelDefinitions subModels, string treatmentName, Constants constants, Random random)
+    public static double GetIRIResetValue(RoadSegmentMC segment, SubModelDefinitions subModels, string treatmentName, Constants constants, Random random, int period)
     {
         var inputParameters = GetInputParametersForSegment(segment);
                 
@@ -263,14 +298,43 @@ public class Resetter
 
         if (treatmentName.Contains("rehab"))
         {
-            resettedValue = subModels.IRIResetSimulatorRehab.GetSimulatedValue(inputParameters, random);
+            if (period <= constants.MinimiseStochasticEffectsPeriod)
+            {
+                // Take the average of multiple draws to reduce stochasticity in the early periods after rehab, which can have a big impact on
+                // model outputs and make it more difficult to identify the underlying drivers of model results.
+                double meanReset = 0;
+                int nDraws = 5;
+                for (int i = 0; i < nDraws; i++)
+                {
+                    meanReset += subModels.IRIResetSimulatorRehab.GetSimulatedValue(inputParameters, random);
+                }
+                resettedValue = meanReset / nDraws;
+            }
+            else
+            {
+                resettedValue = subModels.IRIResetSimulatorRehab.GetSimulatedValue(inputParameters, random);
+            }
         }
-        else 
+        else
         {
-            // Presume all other treatment types (holding, preseal repairs etc) reset as for resurfacing.
-            resettedValue = subModels.IRIResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
+            if (period <= constants.MinimiseStochasticEffectsPeriod)
+            {
+                // Take the average of multiple draws to reduce stochasticity in the early periods after rehab, which can have a big impact on
+                // model outputs and make it more difficult to identify the underlying drivers of model results.
+                double meanReset = 0;
+                int nDraws = 5;
+                for (int i = 0; i < nDraws; i++)
+                {
+                    meanReset += subModels.IRIResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
+                }
+                resettedValue = meanReset / nDraws;
+            }
+            else
+            {
+                // Presume all other treatment types (holding, preseal repairs etc) reset as for resurfacing.
+                resettedValue = subModels.IRIResetSimulatorResurf.GetSimulatedValue(inputParameters, random);
+            }
         }
-        
 
         resettedValue = resettedValue + adjustment; // Apply the treatment specific adjustment to the reset value
 
@@ -299,7 +363,46 @@ public class Resetter
         var inputParameters = GetInputParametersForSegment(segment);
         return subModels.TextureResetSimulator.GetSimulatedValue(inputParameters, random); //Texture reset does not vary by surface class, so we can use the same model for all segments regardless of surface class.        
     }
-       
+
+    #endregion
+
+    #region PDI and SDI reset
+
+    /// <summary>
+    /// Resets the Pavement Distress Index. For rehab treatments, we assume that the treatment will reset the PDI to . For 
+    /// non-rehab treatments, we assume that the treatment will reduce the PDI but not reset it to 0, as some damage will remain after treatment. 
+    /// TODO: improve logic here.
+    /// </summary>
+    /// <param name="segment"></param>
+    /// <param name="subModels"></param>
+    /// <param name="treatmentName"></param>
+    /// <param name="constants"></param>
+    /// <param name="random"></param>
+    /// <param name="isRehab"></param>
+    public static void ResetPavementDistressIndex(RoadSegmentMC segment, SubModelDefinitions subModels, string treatmentName, Constants constants, Random random, bool isRehab)
+    {
+        if (isRehab)
+        {
+            segment.PavementDistressIndex = 0;
+        }
+        else
+        {
+            // For non-rehab treatments, we assume that the treatment will reduce the PDI but not reset it to 0, as
+            // some damage will remain after treatment. This means PDI will start progressing again right after the treatment, unless it 
+            // was zero to begin with
+            segment.PavementDistressIndex = Math.Min(segment.PavementDistressIndex, 0.1);
+        }
+    }
+
+    /// <summary>
+    /// Resets the Surface Distress Index. TODO: improve logic here.
+    /// </summary>
+    public static void ResetSurfacingDistressIndex(RoadSegmentMC segment, SubModelDefinitions subModels, string treatmentName, Constants constants, Random random)
+    {
+        segment.SurfaceDistressIndex = 0;        
+    }
+
+
     #endregion
 
     #region Helper Methods

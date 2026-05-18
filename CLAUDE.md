@@ -22,8 +22,8 @@ All framework calls enter through [DomainObjects/MonteCarloRoadModelV1.cs](Domai
 | `Initialise(iElem, numInputs, textInputs, sinks…)` | Period 0, each element | [Initialiser](DomainObjects/Initialiser.cs) → builds a `RoadSegmentMC` from raw `inp_*` columns, then writes parameter values back via the numeric/text sink `Action`s |
 | `Increment(iElem, iPeriod, …)` | Each period, elements without a selected treatment | [Incrementer](DomainObjects/Incrementer.cs) → advances age, traffic growth, and draws HSD deterioration (rut, IRI, texture) from sub-models |
 | `Reset(treatment, iElem, iPeriod, …)` | Each period, elements that received a treatment | [Resetter](DomainObjects/Resetter.cs) → updates surfacing properties via lookups, re-draws HSD values from reset simulators |
-| `GetTreatmentCandidates(...)` | Each element/period, MCDA triggering | Currently returns empty list (commented-out MCDA trigger) — treatment selection is not yet active in V1 |
-| `GetTriggeredMaintenance(...)` | After treatment selection | Currently returns `null` (stubbed) |
+| `GetTreatmentCandidates(...)` | Each element/period, MCDA triggering | [TreatmentsTrigger](DomainObjects/TreatmentsTrigger.cs) → gates on `CandidateSelectionOutcome == "ok"` + `periods_to_next_treatment`, dispatches on `NextSurface` to [TriggerAsphalts](DomainObjects/TriggerAsphalts.cs) / [TriggerChipseals](DomainObjects/TriggerChipseals.cs) / birthday-treatment branch. Fully active in V1. |
+| `GetTriggeredMaintenance(...)` | After treatment selection | Returns `null!` by design — routine maintenance is modelled as a per-period probabilistic *cost* via `RoutineMaintenanceModeller` + PA/potfill probability+extent simulators, NOT as a framework-triggered `TreatmentInstance`. |
 | `DoEndOfPeriodCalculations(iPeriod)` | End of each period, after all elements processed | No-op |
 
 The sinks passed as `Action<string, double>` / `Action<string, string>` are how you write parameter values back into the framework matrices; see `RoadSegmentMC.SetParameterValues` for the full `par_*` contract.
@@ -100,7 +100,7 @@ The project references sibling repos (`..\..\cassandra_main\JCass_Core` and `..\
 - **`model.LogMessage(...)`** is the framework-visible warning channel; used for anomalies like future-dated surfacing.
 - **Surface-class lowercase invariant**: `SurfaceClass`, `UrbanRural`, `ONRC` setters force lowercase. Don't bypass.
 - **GetSpecialPlaceholderValues(...)** is fetched at the top of Initialise/Increment/Reset/GetTreatmentCandidates and passed into formula-update calls. Most of those are currently commented out while formula/MCDA logic is being ported — keep the fetch in place.
-- **V1 scope**: `GetTreatmentCandidates` and `GetTriggeredMaintenance` are stubbed (return empty/null). Treatment triggering isn't wired up yet; this model currently only exercises Initialise/Increment/Reset.
+- **V1 scope**: MCDA triggering (`GetTreatmentCandidates`) is fully wired — see [TreatmentsTrigger](DomainObjects/TreatmentsTrigger.cs) + [CandidateSelector](DomainObjects/CandidateSelector.cs) + [TriggerAsphalts](DomainObjects/TriggerAsphalts.cs) + [TriggerChipseals](DomainObjects/TriggerChipseals.cs) + [TreatmentSuitabilityScorer](DomainObjects/TreatmentSuitabilityScorer.cs). The only deliberate stub is `GetTriggeredMaintenance` (returns `null!`); routine maintenance is sampled by `RoutineMaintenanceModeller` inside `Increment` rather than emitted through the framework hook. The `segment.UpdateFormulaValues(...)` calls in `Initialise` / `Reset` / `GetTreatmentCandidates` are commented out because formula-update logic has been replaced by direct property computation in `RoadSegmentFactoryMC` / `RoadSegmentMC` — the trigger pipeline reads already-populated `CandidateSelectionOutcome`, `PavementDistressIndex`, `SurfaceDistressIndex`, `SurfaceAchievedLifePercent`, etc. from the segment.
 
 ## File map
 
@@ -111,6 +111,11 @@ The project references sibling repos (`..\..\cassandra_main\JCass_Core` and `..\
 - [DomainObjects/Incrementer.cs](DomainObjects/Incrementer.cs) — per-period deterioration, episode-length logic
 - [DomainObjects/Resetter.cs](DomainObjects/Resetter.cs) — post-treatment state update
 - [DomainObjects/RoutineMaintenanceModeller.cs](DomainObjects/RoutineMaintenanceModeller.cs) — samples PA + potfill probability/extent
+- [DomainObjects/CandidateSelector.cs](DomainObjects/CandidateSelector.cs) — Stage-1 gating ("ok" / reason string)
+- [DomainObjects/TreatmentsTrigger.cs](DomainObjects/TreatmentsTrigger.cs) — Stage-2 dispatcher by `NextSurface`
+- [DomainObjects/TriggerAsphalts.cs](DomainObjects/TriggerAsphalts.cs) — AC/OGPA candidates: Preservation, Holding (composite), Heavy Maintenance, Rehabilitation
+- [DomainObjects/TriggerChipseals.cs](DomainObjects/TriggerChipseals.cs) — Chipseal candidates: Second-coat (forced), Preservation, Preseal repair, Rehabilitation
+- [DomainObjects/TreatmentSuitabilityScorer.cs](DomainObjects/TreatmentSuitabilityScorer.cs) — TSS arbitration via PWL curves on `RehabilitationNeedsIndexRank`; preservation uses `SurfacingNeedsIndexRank` directly
 - [DomainObjects/SubModelDefinitions.cs](DomainObjects/SubModelDefinitions.cs) — container for all simulators/statistical sub-models
 - [DomainObjects/Constants.cs](DomainObjects/Constants.cs) — tunables loaded from project lookups
 - [Utilities/SetupUtilities.cs](Utilities/SetupUtilities.cs) — CSV-driven sub-model wiring

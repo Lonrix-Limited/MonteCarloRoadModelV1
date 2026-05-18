@@ -114,8 +114,12 @@ The `MonteCarloRoadModelV1` class subclasses `DomainModelBase` and implements:
 - `Reset(treatment, iElem, iPeriod, …)` — post-treatment state update: surface age,
   thickness, layer count, surface function transitions (`1 → 2 → R`) and a fresh
   set of rut/IRI/texture resets and first-episode increments.
-- `GetTreatmentCandidates(...)` / `GetTriggeredMaintenance(...)` — present but
-  **not yet active in V1** (see "V1 scope" below).
+- `GetTreatmentCandidates(...)` — fully active. Runs the MCDA candidate-selection +
+  triggering pipeline (see "Treatment triggering" below).
+- `GetTriggeredMaintenance(...)` — returns `null` by design. Routine maintenance
+  load is modelled probabilistically via `RoutineMaintenanceModeller` and the
+  PA / potfill probability and extent simulators rather than as triggered
+  `TreatmentInstance` objects.
 - `DoEndOfPeriodCalculations(iPeriod)` — no-op in this version.
 
 The central domain object is `RoadSegmentMC` (identification, quantity,
@@ -123,6 +127,60 @@ surfacing/pavement, ONRC/rainfall, traffic, HSD condition, maintenance propertie
 Its `SetParameterValues(...)` method is the canonical write-contract for all `par_*`
 outputs the framework expects; `RoadSegmentFactoryMC.GetFromRawData(...)` is the
 authoritative reader for the `inp_*` input columns the setup workbook must supply.
+
+## Treatment triggering
+
+`GetTreatmentCandidates(...)` runs a two-stage MCDA pipeline per element per period:
+
+**Stage 1 — Candidate selection** ([CandidateSelector.cs](DomainObjects/CandidateSelector.cs)).
+Returns one of: `ok`, `committed near future`, `segment too short`,
+`pdi and sdi below threshold`, `sla too low`, or `birthday type: too young`.
+Thresholds come from the `candidate_selection` lookup set
+(`CSMinPeriodsToNextTreat`, `CSMinLengthToTreatAny`, `CSMinSDIToTreat`,
+`CSMinPDIToTreat`, separate `CSMinSlaToTreatCs` / `CSMinSlaToTreatAc`).
+Only `"ok"` segments advance.
+
+**Stage 2 — Treatment triggering** ([TreatmentsTrigger.cs](DomainObjects/TreatmentsTrigger.cs)).
+Dispatches on the segment's `NextSurface` (which the input pre-processing can
+force, allowing e.g. a current chipseal to be steered toward an asphalt next
+surface):
+
+- **Asphaltic next-surface** (`ac`, `ogpa`, `slurry`) →
+  [TriggerAsphalts.cs](DomainObjects/TriggerAsphalts.cs) emits up to four
+  candidates: **Preservation thin AC** (`{class}_resurf`), **Holding thin AC**
+  (`{class}_holding` — a composite treatment with cost split via
+  `AssignBudgetCategoryFractions` into `Resurfacing` and `Pre-Repairs`),
+  **AC Heavy Maintenance** (`{class}_hmaint`, gated by
+  `MinPeriodsBetweenACHeavyMaint` and `MaxSlaForACHeavyMaint`), and
+  **Rehabilitation** (`{class}_rehab`, requires `CanRehabFlag == 1`).
+- **Chipseal next-surface** (`cs`) →
+  [TriggerChipseals.cs](DomainObjects/TriggerChipseals.cs) emits: **Second-coat**
+  (forced, `cs_2nd_coat_r` or `cs_2nd_coat_h`, when `SecondCoatNeeded` and
+  `SLA >= 100`); otherwise **Preservation chipseal** (`cs_preserve`),
+  **Preseal repair** (`cs_preseal`, sized to the in-distress area fraction
+  `PDI/100`), and **Rehabilitation** (`cs_rehab`).
+- **Blocks / concrete / other** → birthday treatment (`blocks`, `concrete`,
+  `xtreat`) when `SurfaceRemainingLife <= 1` and the period is past
+  `EarliestTreatmentPeriod`. Forced, with a high TSS so it always survives
+  optimisation.
+
+**Treatment Suitability Score (TSS)**
+([TreatmentSuitabilityScorer.cs](DomainObjects/TreatmentSuitabilityScorer.cs))
+arbitrates between candidates inside the framework's optimisation stage:
+
+- **Preservation** uses the segment's `SurfacingNeedsIndexRank` directly
+  (rank-based, not curve-mapped).
+- **Rehabilitation** uses the `TSSForRehabilitation` piecewise-linear curve
+  on `RehabilitationNeedsIndexRank`.
+- **Holding action** uses the `TSSForHoldingAction` piecewise-linear curve on
+  `RehabilitationNeedsIndexRank`.
+
+A non-trivial design touch: when a route is **not** rehab-eligible
+(`CanRehabFlag == 0`), Preseal Repair and AC Heavy Maintenance fall back to the
+rehabilitation TSS curve — they're effectively standing in for rehab on routes
+that can't be rehabilitated, so they should compete on the rehab-side scale.
+On rehab-eligible routes they use the holding-action curve and compete against
+the actual rehab candidate, which carries the rehab TSS.
 
 ## Configuration and lookups
 
@@ -145,20 +203,21 @@ rather than silently substituting a default.
 
 ## V1 scope and limitations
 
-This is V1 of the model and is deliberately narrow:
-
-- **Treatment triggering is not active.** `GetTreatmentCandidates(...)` returns an
-  empty list (the MCDA trigger is wired but commented out) and
-  `GetTriggeredMaintenance(...)` returns `null`. In a Cassandra run, treatments
-  therefore come from a programme/strategy file, not from in-model triggering.
-- **Maintenance is sampled, not optimised.** The PA + potfill probability and extent
-  draws are used to *model* maintenance load on condition, not to *choose* a
-  maintenance programme.
+- **Routine maintenance is sampled, not framework-triggered.**
+  `GetTriggeredMaintenance(...)` returns `null` by design. The PA and pothole-fill
+  probability + extent simulators drive *condition* impact of routine maintenance
+  inside `Increment` rather than emitting `TreatmentInstance` objects for the
+  framework to optimise. This is intentional — routine maintenance load is treated
+  as a stochastic *cost* rather than an optimisation choice.
 - **Texture reset is treatment-agnostic.** A single texture-reset simulator is used
   for every treatment type, by design — historical texture-reset data did not
   separate cleanly by treatment family.
 - **Reduction floors are hard-coded** (1.5 mm rut, 0.5 IRI). These prevent
-  unrealistic recoveries; they are not lookup-driven in V1.
+  unrealistic recoveries after PA maintenance; they are not lookup-driven in V1.
+- **No end-of-period network calculations.** `DoEndOfPeriodCalculations(...)` is a
+  no-op. Network-level rankings / proportions that drive next-period decisions
+  rely on framework-supplied ranks (`para_sla_rank`, `para_rut_rank`,
+  `para_iri_rank`) rather than custom roll-ups.
 
 ## Build target
 

@@ -1,8 +1,15 @@
 # MonteCarloRoadModelV1
 
 A stochastic road pavement deterioration **Domain Model** for the
-[Juno Cassandra](https://lonrix-limited.github.io/jcass_docs2/) framework, focused on
-New Zealand state highway forecasting.
+[Juno Cassandra](https://lonrix-limited.github.io/jcass_docs2/) framework.
+Suited for road network deterioration modelling in general, but developed and
+calibrated using data from New Zealand road networks.
+
+**Open source.** Source lives at
+[github.com/Lonrix-Limited/MonteCarloRoadModelV1](https://github.com/Lonrix-Limited/MonteCarloRoadModelV1).
+Experienced modellers are welcome to clone, study and modify it for their own
+use in Cassandra — the simulator wiring, lookup-driven thresholds and trigger
+classes are all explicit entry points for customisation.
 
 Every per-period change to condition — rut depth, IRI roughness, surface texture,
 maintenance extents, post-treatment reset values — is drawn from an empirical
@@ -228,5 +235,6 @@ rather than silently substituting a default.
 
 ## Reference
 
+- Source repo — https://github.com/Lonrix-Limited/MonteCarloRoadModelV1
 - Juno Cassandra docs — https://lonrix-limited.github.io/jcass_docs2/
 - Project folder guide — https://lonrix-limited.github.io/jcass_docs2/guide/guide_project_folder.html
